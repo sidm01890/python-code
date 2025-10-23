@@ -1,0 +1,1570 @@
+{
+  "info": {
+    "name": "Reconcii Admin API - All 47 APIs",
+    "description": "Complete API collection for Python FastAPI implementation converted from Node.js",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{jwt_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8034",
+      "type": "string"
+    },
+    {
+      "key": "jwt_token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication APIs",
+      "item": [
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"testuser\",\n  \"email\": \"test@example.com\",\n  \"password\": \"test123\",\n  \"first_name\": \"Test\",\n  \"last_name\": \"User\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Login User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"testuser\",\n  \"password\": \"test123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "login"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.environment.set('jwt_token', response.access_token);",
+                  "    console.log('JWT Token saved:', response.access_token);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Alias (Access Token)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"testuser\",\n  \"password\": \"test123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/auth/access/token",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "auth", "access", "token"]
+            }
+          }
+        },
+        {
+          "name": "Update Subscriptions",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"organization_id\": 1,\n  \"tool_id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/update_subscriptions",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "update_subscriptions"]
+            }
+          }
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"testuser\",\n  \"email\": \"test@example.com\",\n  \"resend\": false\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/end_user/forgot_password",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "end_user", "forgot_password"]
+            }
+          }
+        },
+        {
+          "name": "Verify OTP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"testuser\",\n  \"email\": \"test@example.com\",\n  \"otp\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/end_user/verify_otp",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "end_user", "verify_otp"]
+            }
+          }
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"testuser\",\n  \"email\": \"test@example.com\",\n  \"new_password\": \"newpassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/end_user/reset_password",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "end_user", "reset_password"]
+            }
+          }
+        },
+        {
+          "name": "Verify Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/verify-token",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "verify-token"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "User Management APIs",
+      "item": [
+        {
+          "name": "Create User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"newuser\",\n  \"password\": \"password123\",\n  \"name\": \"New User\",\n  \"email\": \"newuser@example.com\",\n  \"mobile\": \"+1234567890\",\n  \"organization_id\": 1,\n  \"group_id\": 1,\n  \"role_name\": 1,\n  \"user_label\": \"user\",\n  \"level\": \"1\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/user/createUser",
+              "host": ["{{base_url}}"],
+              "path": ["api", "user", "createUser"]
+            }
+          }
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": 1,\n  \"name\": \"Updated User\",\n  \"mobile\": \"+1234567890\",\n  \"organization_id\": 1,\n  \"group_id\": 1,\n  \"active\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/user/updateUser",
+              "host": ["{{base_url}}"],
+              "path": ["api", "user", "updateUser"]
+            }
+          }
+        },
+        {
+          "name": "Delete User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/user/deleteUser?user_id=1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "user", "deleteUser"],
+              "query": [
+                {
+                  "key": "user_id",
+                  "value": "1"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": 1,\n  \"password\": \"newpassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/user/updatePassword",
+              "host": ["{{base_url}}"],
+              "path": ["api", "user", "updatePassword"]
+            }
+          }
+        },
+        {
+          "name": "Get All Users",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"organization_id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/user/getAllUsers",
+              "host": ["{{base_url}}"],
+              "path": ["api", "user", "getAllUsers"]
+            }
+          }
+        },
+        {
+          "name": "Get User Modules",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/user/getUserModules",
+              "host": ["{{base_url}}"],
+              "path": ["api", "user", "getUserModules"]
+            }
+          }
+        },
+        {
+          "name": "Update User Module Mapping",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": 1,\n  \"module_permission_mapping\": {\n    \"1\": [1, 2, 3],\n    \"2\": [4, 5, 6]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/user/updateUserModuleMapping",
+              "host": ["{{base_url}}"],
+              "path": ["api", "user", "updateUserModuleMapping"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Organization Management APIs",
+      "item": [
+        {
+          "name": "Create Organization",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"organization_unit_name\": \"Test Org\",\n  \"organization_full_name\": \"Test Organization Ltd\",\n  \"domain_name\": \"testorg.com\",\n  \"address\": \"123 Test Street, Test City\",\n  \"logo_url\": \"https://example.com/logo.png\",\n  \"status\": 1,\n  \"username\": \"orgadmin\",\n  \"email\": \"admin@testorg.com\",\n  \"mobile\": \"+1234567890\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/organization/create",
+              "host": ["{{base_url}}"],
+              "path": ["api", "organization", "create"]
+            }
+          }
+        },
+        {
+          "name": "Get All Organizations",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/organization/all",
+              "host": ["{{base_url}}"],
+              "path": ["api", "organization", "all"]
+            }
+          }
+        },
+        {
+          "name": "Update Organization",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": 1,\n  \"organization_unit_name\": \"Updated Org\",\n  \"organization_full_name\": \"Updated Organization Ltd\",\n  \"domain_name\": \"updatedorg.com\",\n  \"address\": \"456 Updated Street, Updated City\",\n  \"logo_url\": \"https://example.com/updated-logo.png\",\n  \"status\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/organization/update",
+              "host": ["{{base_url}}"],
+              "path": ["api", "organization", "update"]
+            }
+          }
+        },
+        {
+          "name": "Delete Organization",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/organization/delete",
+              "host": ["{{base_url}}"],
+              "path": ["api", "organization", "delete"]
+            }
+          }
+        },
+        {
+          "name": "Assign Tools to Organization",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"organization_id\": 1,\n  \"tool_ids\": [1, 2, 3],\n  \"module_ids\": [1, 2, 3, 4]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/organization/tools/assign",
+              "host": ["{{base_url}}"],
+              "path": ["api", "organization", "tools", "assign"]
+            }
+          }
+        },
+        {
+          "name": "Get Organization Tools",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/organization/tools/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "organization", "tools", "1"]
+            }
+          }
+        },
+        {
+          "name": "Get Dashboard Stats",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"organization_id\": 1,\n  \"tool_id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/organization/dashboard",
+              "host": ["{{base_url}}"],
+              "path": ["api", "organization", "dashboard"]
+            }
+          }
+        },
+        {
+          "name": "Get Organization Modules",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"organization_id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/organization/getOrganizationModules",
+              "host": ["{{base_url}}"],
+              "path": ["api", "organization", "getOrganizationModules"]
+            }
+          }
+        },
+        {
+          "name": "Update Organization Module Mapping",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"organization_id\": 1,\n  \"organization_module_mapping\": {\n    \"1\": [1, 2, 3],\n    \"2\": [4, 5, 6]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/organization/updateOrganizationModules",
+              "host": ["{{base_url}}"],
+              "path": ["api", "organization", "updateOrganizationModules"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Tool Management APIs",
+      "item": [
+        {
+          "name": "Create Tool",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tool_name\": \"Test Tool\",\n  \"tool_logo\": \"https://example.com/tool-logo.png\",\n  \"tool_url\": \"https://tool.example.com\",\n  \"tool_status\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/tool/createTool",
+              "host": ["{{base_url}}"],
+              "path": ["api", "tool", "createTool"]
+            }
+          }
+        },
+        {
+          "name": "Get All Tools",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/tool/getAllTools",
+              "host": ["{{base_url}}"],
+              "path": ["api", "tool", "getAllTools"]
+            }
+          }
+        },
+        {
+          "name": "Get Tool By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/tool/getToolById?tool_id=1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "tool", "getToolById"],
+              "query": [
+                {
+                  "key": "tool_id",
+                  "value": "1"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Tool",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": 1,\n  \"tool_name\": \"Updated Tool\",\n  \"tool_logo\": \"https://example.com/updated-tool-logo.png\",\n  \"tool_url\": \"https://updated-tool.example.com\",\n  \"tool_status\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/tool/updateTool",
+              "host": ["{{base_url}}"],
+              "path": ["api", "tool", "updateTool"]
+            }
+          }
+        },
+        {
+          "name": "Delete Tool",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/tool/deleteTool",
+              "host": ["{{base_url}}"],
+              "path": ["api", "tool", "deleteTool"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Module Management APIs",
+      "item": [
+        {
+          "name": "Create Module",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"module_name\": \"Test Module\",\n  \"tool_id\": 1,\n  \"id\": null\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/module/createModule",
+              "host": ["{{base_url}}"],
+              "path": ["api", "module", "createModule"]
+            }
+          }
+        },
+        {
+          "name": "Get All Modules",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tool_id\": 1,\n  \"organization_id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/module/getAllModules",
+              "host": ["{{base_url}}"],
+              "path": ["api", "module", "getAllModules"]
+            }
+          }
+        },
+        {
+          "name": "Delete Module",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/module/deleteModule",
+              "host": ["{{base_url}}"],
+              "path": ["api", "module", "deleteModule"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Group Management APIs",
+      "item": [
+        {
+          "name": "Create Group",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"group_name\": \"Test Group\",\n  \"tool_id\": 1,\n  \"organization_id\": 1,\n  \"id\": null\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/group/createGroup",
+              "host": ["{{base_url}}"],
+              "path": ["api", "group", "createGroup"]
+            }
+          }
+        },
+        {
+          "name": "Get All Groups",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tool_id\": 1,\n  \"organization_id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/group/getAllGroups",
+              "host": ["{{base_url}}"],
+              "path": ["api", "group", "getAllGroups"]
+            }
+          }
+        },
+        {
+          "name": "Get Group Modules",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"group_id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/group/getGroupModules",
+              "host": ["{{base_url}}"],
+              "path": ["api", "group", "getGroupModules"]
+            }
+          }
+        },
+        {
+          "name": "Update Group Module Mapping",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"group_id\": 1,\n  \"module_permission_mapping\": {\n    \"1\": [1, 2, 3],\n    \"2\": [4, 5, 6]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/group/updateGroupModuleMapping",
+              "host": ["{{base_url}}"],
+              "path": ["api", "group", "updateGroupModuleMapping"]
+            }
+          }
+        },
+        {
+          "name": "Delete Group",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/group/deleteGroup",
+              "host": ["{{base_url}}"],
+              "path": ["api", "group", "deleteGroup"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Permission Management APIs",
+      "item": [
+        {
+          "name": "Create Permission",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"permission_name\": \"Test Permission\",\n  \"permission_code\": \"TEST_PERMISSION\",\n  \"module_id\": 1,\n  \"tool_id\": 1,\n  \"id\": null\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/permission/createPermission",
+              "host": ["{{base_url}}"],
+              "path": ["api", "permission", "createPermission"]
+            }
+          }
+        },
+        {
+          "name": "Get All Permissions",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"module_id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/permission/getAllPermissions",
+              "host": ["{{base_url}}"],
+              "path": ["api", "permission", "getAllPermissions"]
+            }
+          }
+        },
+        {
+          "name": "Delete Permission",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/permission/deletePermission",
+              "host": ["{{base_url}}"],
+              "path": ["api", "permission", "deletePermission"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Audit Log APIs",
+      "item": [
+        {
+          "name": "Create Audit Log",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"testuser\",\n  \"user_email\": \"test@example.com\",\n  \"role\": \"admin\",\n  \"action\": \"CREATE_USER\",\n  \"action_details\": \"Created new user with ID 123\",\n  \"request\": \"POST /api/user/createUser\",\n  \"remarks\": \"User created successfully\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/audit_log/create",
+              "host": ["{{base_url}}"],
+              "path": ["api", "audit_log", "create"]
+            }
+          }
+        },
+        {
+          "name": "Get Audit Logs",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"startDate\": \"2024-01-01\",\n  \"endDate\": \"2024-12-31\",\n  \"username\": \"testuser\",\n  \"action\": \"CREATE_USER\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/audit_log/list",
+              "host": ["{{base_url}}"],
+              "path": ["api", "audit_log", "list"]
+            }
+          }
+        },
+        {
+          "name": "Get All Organization Users",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/audit_log/user/list",
+              "host": ["{{base_url}}"],
+              "path": ["api", "audit_log", "user", "list"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reconciliation APIs",
+      "item": [
+        {
+          "name": "Check Reconciliation Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/node/reconciliation/populate-threepo-dashboard",
+              "host": ["{{base_url}}"],
+              "path": ["api", "node", "reconciliation", "populate-threepo-dashboard"]
+            }
+          }
+        },
+        {
+          "name": "Generate Reconciliation Excel",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"start_date\": \"2024-01-01\",\n  \"end_date\": \"2024-01-31\",\n  \"organization_id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/node/reconciliation/generate-excel",
+              "host": ["{{base_url}}"],
+              "path": ["api", "node", "reconciliation", "generate-excel"]
+            }
+          }
+        },
+        {
+          "name": "Generate Receivable Receipt Excel",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"start_date\": \"2024-01-01\",\n  \"end_date\": \"2024-01-31\",\n  \"organization_id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/node/reconciliation/generate-receivable-receipt-excel",
+              "host": ["{{base_url}}"],
+              "path": ["api", "node", "reconciliation", "generate-receivable-receipt-excel"]
+            }
+          }
+        },
+        {
+          "name": "Check Generation Status",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"job_id\": \"job-123-456-789\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/node/reconciliation/generation-status",
+              "host": ["{{base_url}}"],
+              "path": ["api", "node", "reconciliation", "generation-status"]
+            }
+          }
+        },
+        {
+          "name": "Get 3PO Dashboard Data",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"start_date\": \"2024-01-01\",\n  \"end_date\": \"2024-01-31\",\n  \"organization_id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/node/reconciliation/threePODashboardData",
+              "host": ["{{base_url}}"],
+              "path": ["api", "node", "reconciliation", "threePODashboardData"]
+            }
+          }
+        },
+        {
+          "name": "Get Instore Dashboard Data",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"start_date\": \"2024-01-01\",\n  \"end_date\": \"2024-01-31\",\n  \"organization_id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/node/reconciliation/instore-data",
+              "host": ["{{base_url}}"],
+              "path": ["api", "node", "reconciliation", "instore-data"]
+            }
+          }
+        },
+        {
+          "name": "Generate Common TRM",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"start_date\": \"2024-01-01\",\n  \"end_date\": \"2024-01-31\",\n  \"organization_id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/node/reconciliation/generate-common-trm",
+              "host": ["{{base_url}}"],
+              "path": ["api", "node", "reconciliation", "generate-common-trm"]
+            }
+          }
+        },
+        {
+          "name": "Download File",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/node/reconciliation/download/sample-file.xlsx",
+              "host": ["{{base_url}}"],
+              "path": ["api", "node", "reconciliation", "download", "sample-file.xlsx"]
+            }
+          }
+        },
+        {
+          "name": "Get All Cities",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/node/reconciliation/cities",
+              "host": ["{{base_url}}"],
+              "path": ["api", "node", "reconciliation", "cities"]
+            }
+          }
+        },
+        {
+          "name": "Get Stores by Cities",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"city_ids\": [1, 2, 3]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/node/reconciliation/stores",
+              "host": ["{{base_url}}"],
+              "path": ["api", "node", "reconciliation", "stores"]
+            }
+          }
+        },
+        {
+          "name": "Get Missing Store Mappings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/node/reconciliation/public/threepo/missingStoreMappings",
+              "host": ["{{base_url}}"],
+              "path": ["api", "node", "reconciliation", "public", "threepo", "missingStoreMappings"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "File Upload APIs",
+      "item": [
+        {
+          "name": "Upload Files",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "type",
+                  "value": "reconciliation",
+                  "type": "text"
+                },
+                {
+                  "key": "files",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/uploader/upload",
+              "host": ["{{base_url}}"],
+              "path": ["api", "uploader", "upload"]
+            }
+          }
+        },
+        {
+          "name": "Get Upload Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/uploader/status/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "uploader", "status", "1"]
+            }
+          }
+        },
+        {
+          "name": "Get All Uploads",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/uploader/uploads?page=1&limit=10&status=completed&type=reconciliation",
+              "host": ["{{base_url}}"],
+              "path": ["api", "uploader", "uploads"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "status",
+                  "value": "completed"
+                },
+                {
+                  "key": "type",
+                  "value": "reconciliation"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Upload",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/uploader/uploads/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "uploader", "uploads", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sheet Data APIs",
+      "item": [
+        {
+          "name": "Generate Sheet Data",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"start_date\": \"2024-01-01\",\n  \"end_date\": \"2024-01-31\",\n  \"store_codes\": [\"store1\", \"store2\", \"store3\"]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/sheetData/generate",
+              "host": ["{{base_url}}"],
+              "path": ["api", "sheetData", "generate"]
+            }
+          }
+        },
+        {
+          "name": "Get Sheet Data Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/sheetData/status/job-123-456-789",
+              "host": ["{{base_url}}"],
+              "path": ["api", "sheetData", "status", "job-123-456-789"]
+            }
+          }
+        },
+        {
+          "name": "Get Sheet Data",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/sheetData/data?sheet_type=zomato_pos_vs_3po&start_date=2024-01-01&end_date=2024-01-31&store_codes=store1,store2",
+              "host": ["{{base_url}}"],
+              "path": ["api", "sheetData", "data"],
+              "query": [
+                {
+                  "key": "sheet_type",
+                  "value": "zomato_pos_vs_3po"
+                },
+                {
+                  "key": "start_date",
+                  "value": "2024-01-01"
+                },
+                {
+                  "key": "end_date",
+                  "value": "2024-01-31"
+                },
+                {
+                  "key": "store_codes",
+                  "value": "store1,store2"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "System APIs",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            }
+          }
+        },
+        {
+          "name": "API Documentation",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api-docs",
+              "host": ["{{base_url}}"],
+              "path": ["api-docs"]
+            }
+          }
+        },
+        {
+          "name": "OpenAPI Schema",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/openapi.json",
+              "host": ["{{base_url}}"],
+              "path": ["openapi.json"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
