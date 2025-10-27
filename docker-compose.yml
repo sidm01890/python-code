@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "8034:8034"
+    environment:
+      - ENVIRONMENT=development
+      - DEBUG=true
+      - SSO_DB_HOST=mysql_sso
+      - MAIN_DB_HOST=mysql_main
+      - REDIS_HOST=redis
+    depends_on:
+      - mysql_sso
+      - mysql_main
+      - redis
+    volumes:
+      - ./app:/app/app
+    networks:
+      - reconcii_network
+
+  mysql_sso:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: bercos_sso
+      MYSQL_USER: app_user
+      MYSQL_PASSWORD: app_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_sso_data:/var/lib/mysql
+    networks:
+      - reconcii_network
+
+  mysql_main:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: devyani
+      MYSQL_USER: app_user
+      MYSQL_PASSWORD: app_password
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_main_data:/var/lib/mysql
+    networks:
+      - reconcii_network
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - reconcii_network
+
+volumes:
+  mysql_sso_data:
+  mysql_main_data:
+  redis_data:
+
+networks:
+  reconcii_network:
+    driver: bridge
