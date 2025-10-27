@@ -1,0 +1,110 @@
+.graph-card {
+  overflow: hidden;
+  margin-bottom: 25px;
+}
+
+.graph-card-title-div {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--card-background);
+  padding: 10px 0px;
+  box-shadow: rgba(0, 0, 0, 0.12) 0px 1px 3px, rgba(0, 0, 0, 0.24) 0px 1px 2px;
+}
+
+.graph-card-title-div > p {
+  color: #000000;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+
+.title-dropdown {
+  /* all: unset; */
+  color: #000000;
+  background-color: var(--card-background);
+  outline: none !important;
+  cursor: pointer;
+  font-weight: bold;
+  letter-spacing: 1px;
+  text-align: center;
+}
+
+.graph-card-content {
+  min-height: 250px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.download-button {
+  all: unset;
+  position: absolute;
+  right: 5px;
+  background: #ffffff;
+  height: 20px;
+  width: 20px;
+  border-radius: 10px;
+  padding: 5px;
+  cursor: pointer;
+}
+
+.chart-container {
+  margin-top: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  position: relative;
+}
+
+.chart-title {
+  color: #000000;
+  font-weight: bold;
+  text-align: center;
+  font-size: 13px;
+  margin-bottom: 0px;
+}
+
+.chart-title-legend {
+  border-bottom: 2px solid #f5f5f5;
+  border-bottom: 2px solid #f5f5f5;
+  display: inline-block;
+  padding: 5px 10px;
+  border-radius: 5px;
+  margin-left: auto;
+  margin-right: auto;
+  box-shadow: rgba(50, 50, 93, 0.25) 0px 50px 100px -20px,
+    rgba(0, 0, 0, 0.3) 0px 30px 60px -30px;
+}
+
+.chart-list-horizontal {
+  display: flex;
+}
+
+.chart-select {
+  background-color: #f5f5f5;
+  border-radius: 5px;
+  /* position: absolute; */
+  top: 5px;
+  right: 5px;
+  border: 1px solid #f5f5f5;
+  outline: none !important;
+}
+
+.legend-box {
+  height: 10px;
+  width: 10px;
+}
+
+.legend-expand-button {
+  background-color: #f5f5f5;
+  width: 100%;
+  border-radius: 5px;
+  display: flex;
+  justify-content: space-between;
+  padding: 3px 10px;
+  /* justify-content: center; */
+  align-items: center;
+  /* border-radius: 5px; */
+  /* top: 50px; */
+}

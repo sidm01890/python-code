@@ -1,0 +1,114 @@
+.box-with-border {
+  border-bottom: 3px solid #205ca9;
+}
+
+.icon-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100px;
+  width: 100px;
+  border-radius: 50px;
+  background-color: #ffffff;
+  box-shadow: rgb(38, 57, 77) 0px 20px 30px -10px;
+}
+
+.icon-box img {
+  height: 70px;
+  width: 70px;
+}
+
+.card-label {
+  color: #000000;
+  font-size: 16px;
+}
+
+.card-number {
+  color: #000000;
+  font-size: 30px;
+}
+
+.lac-label {
+  color: #000000;
+  font-size: 14px;
+  display: inline;
+}
+
+/* 
+.progress.progress-xs,
+.progress-stacked.progress-xs {
+    height: .3125rem;
+}
+
+.progress {
+    display: flex;
+    height: .75rem;
+    width: 100%;
+    border-radius: .375rem;
+    background-color: var(--light-color);
+}
+
+.progress-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-start-start-radius: 9999px;
+    border-end-start-radius: 9999px;
+    background-color: red;
+    --tw-text-opacity: 1;
+    color: pink
+}
+
+.bg-warning {
+    background-color: yellow;
+}
+
+.\!bg-success {
+    background-color: green !important;
+}
+
+.bi-cart-check::before {
+    content: "\F23A";
+    }
+    
+.avatar.avatar-lg {
+    height: 3rem;
+    width: 3rem;
+    font-size: 1rem;
+    line-height: 3rem;
+}
+
+.avatar {
+    position: relative;
+    margin-bottom: .25rem;
+    display: inline-flex;
+    height: 2.625rem;
+    width: 2.625rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: .5rem;
+    font-weight: 500;
+    --tw-text-opacity: 1;
+    color: rgb(255 255 255 / 1);
+}
+
+.rounded-md {
+    border-radius: .5rem;
+}
+
+.ms-auto {
+    margin-inline-start: auto;
+}
+
+    .bi::before, [class^="bi-"]::before, [class*=" bi-"]::before {
+        display: inline-block;
+        font-family: bootstrap-icons !important;
+        font-style: normal;
+        font-weight: normal !important;
+        font-variant: normal;
+        text-transform: none;
+        line-height: 1;
+        vertical-align: -.125em;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        } */

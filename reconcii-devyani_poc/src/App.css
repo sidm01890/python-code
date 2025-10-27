@@ -1,0 +1,273 @@
+/* @import "./Pages/Styles/CardComponent.css"; */
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: "Cabin", sans-serif;
+  font-optical-sizing: auto;
+  font-style: normal;
+  color: var(--text-color);
+}
+
+p {
+  font-family: "Cabin", sans-serif;
+  font-optical-sizing: auto;
+  font-style: normal;
+  color: var(--text-color);
+}
+
+.navLink:hover {
+  background-color: var(--body-background);
+  color: var(--text-color);
+}
+.navLinkSelected {
+  background-color: var(--body-background);
+  color: var(--text-color);
+}
+
+.body-background {
+  background-color: var(--body-background);
+  height: calc(100vh - 88px);
+  overflow-y: auto;
+}
+
+.navbar-dropdown {
+  background-color: var(--body-background);
+}
+
+.navbar-dropdown p {
+  color: var(--text-color);
+}
+
+.theme-background {
+  background-color: #1c1577;
+  color: #ffffff;
+}
+
+.content-area {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.form-area {
+  background-color: #ffffff;
+  border: 1px solid #ccc;
+  padding: 50px 25px;
+  margin: 15px;
+}
+
+.primary-button {
+  background-color: #1c1577 !important;
+}
+
+.primary-button:hover {
+  background-color: #1c1577 !important;
+}
+
+.primary-tab {
+  background-color: #1c1577 !important;
+}
+
+.link-text {
+  color: #1c1577 !important;
+}
+
+.text-box-error-text {
+  color: #ff0000;
+  font-size: 10px;
+}
+
+.admin-login-thumbnail {
+  height: 600px;
+}
+
+.login-page {
+  background-image: url("admin.jpg");
+  background-position: center;
+  /* Center the image */
+  background-repeat: no-repeat;
+  /* Do not repeat the image */
+  background-size: cover;
+}
+
+.navLink {
+  align-items: center;
+}
+
+.box {
+  color: var(--text-color);
+  position: relative;
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  border-radius: 0.375rem;
+  border-color: var(--default-borderColor);
+  background-color: var(--card-background);
+  font-size: 0.875rem;
+  box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px;
+}
+
+.box-header {
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  border-top-left-radius: 0.375rem;
+  border-top-right-radius: 0.375rem;
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
+  padding-top: 1rem;
+}
+
+.box-title {
+  position: relative;
+  margin-inline-end: auto;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.box-body {
+  padding: 1.25rem;
+}
+
+.h4 {
+  font-size: 1.5rem;
+}
+
+.with-shadow {
+  box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px;
+}
+
+.menu-border-radius {
+  border-top-right-radius: 10px;
+  border-bottom-right-radius: 10px;
+}
+
+.loader-ui {
+  position: absolute;
+  height: 100vh;
+  width: 100vw;
+  background-color: rgba(0, 0, 0, 0.5);
+  top: 0;
+  left: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.spinner-div {
+  height: 80px;
+  width: 80px;
+  background-color: #000000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 5px;
+}
+
+.spinner-div img {
+  height: 60px;
+  width: 60px;
+}
+
+.alert-box {
+  position: fixed;
+  top: 20px;
+  right: -300px; /* Start off-screen */
+  width: 250px;
+  padding: 15px;
+  color: white;
+  text-align: center;
+  border-radius: 4px;
+}
+
+.alert-box.success {
+  background-color: #4caf50;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transition: right 0.5s ease-in-out;
+}
+
+.alert-box.error {
+  background-color: #f44336;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transition: right 0.5s ease-in-out;
+}
+
+.alert-box.slide-in {
+  right: 20px; /* Slide in */
+}
+
+.alert-box.slide-out {
+  right: -300px; /* Slide out */
+}
+
+.custom-table-style > table {
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  /* overflow: hidden; */
+}
+
+.custom-table-style > table > thead {
+  background-color: #424242 !important;
+  color: #ffffff !important;
+  font-size: 13px;
+}
+
+.custom-table-style > table > thead > tr > th {
+  padding: 10px 15px;
+}
+
+.custom-table-style > table > tbody > tr {
+  border-bottom: 1px solid #ccc;
+  background-color: #ffffff;
+}
+
+.custom-table-style > table > tbody > tr > td {
+  padding: 10px 15px;
+  color: #000000;
+  font-size: 14px;
+}
+
+.custom-table-style > table > tbody > tr > td > a {
+  color: #0000ff !important;
+  text-decoration: underline !important;
+}
+
+.fixed-right-action-div {
+  position: absolute;
+  right: 20px;
+}
+
+.required {
+  color: #ff0000;
+}
+
+.data-source-mapping {
+  background-color: #ffffff;
+  padding: 15px;
+  border-radius: 5px;
+}
+
+.data-source-mapping .title {
+  color: #000000;
+  font-weight: bold;
+}
+
+.excel-row {
+  border: 0.5px solid #ccc;
+  display: flex;
+}
+
+.excel-row > div {
+  border: 0.5px solid #ccc;
+  border-bottom: 0px;
+  border-top: 0px;
+}
+
+.custom-table-header {
+  background-color: #424242 !important;
+  color: #ffffff;
+  font-weight: 500;
+}

@@ -1,0 +1,611 @@
+{
+  "timestamp": "09-12-2024T12:48:43.146Z",
+  "code": 200,
+  "data": [
+    {
+      "tender": "Swiggy",
+      "tableWiseColumns": [
+        {
+          "tableName": "swiggy",
+          "columns": [
+            {
+              "columnName": "order_no",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "delivery_fee",
+              "columnType": "DOUBLE",
+              "columnSize": 22
+            },
+            {
+              "columnName": "merchant_cancellation_charges",
+              "columnType": "DOUBLE",
+              "columnSize": 22
+            },
+            {
+              "columnName": "merchant_discount",
+              "columnType": "DOUBLE",
+              "columnSize": 22
+            },
+            {
+              "columnName": "access_fee",
+              "columnType": "DOUBLE",
+              "columnSize": 22
+            },
+            {
+              "columnName": "area",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "base_order_id",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "buyer_cancellation_cost_sharing",
+              "columnType": "DOUBLE",
+              "columnSize": 22
+            },
+            {
+              "columnName": "call_center_servicefees",
+              "columnType": "DOUBLE",
+              "columnSize": 22
+            },
+            {
+              "columnName": "cancellation_attribution",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "cancellation_policy_applied",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "cancellation_time",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "cash_pre_payment_at_restaurant",
+              "columnType": "DOUBLE",
+              "columnSize": 22
+            },
+            {
+              "columnName": "city",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "collection_fee",
+              "columnType": "DOUBLE",
+              "columnSize": 22
+            },
+            {
+              "columnName": "coupon_code_applied",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "customer_payable",
+              "columnType": "DOUBLE",
+              "columnSize": 22
+            },
+            {
+              "columnName": "discount_campaign_id",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "discount_on_long_distance_fee",
+              "columnType": "DOUBLE",
+              "columnSize": 22
+            },
+            {
+              "columnName": "discount_on_swiggy_platform_service_fee",
+              "columnType": "DOUBLE",
+              "columnSize": 22
+            },
+            {
+              "columnName": "disputed_order_remarks",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "found_in_dot_pe",
+              "columnType": "BIT",
+              "columnSize": 1
+            },
+            {
+              "columnName": "found_instld",
+              "columnType": "BIT",
+              "columnSize": 1
+            },
+            {
+              "columnName": "gst_deduction",
+              "columnType": "DOUBLE",
+              "columnSize": 22
+            },
+            {
+              "columnName": "gst_on_order_including_cess",
+              "columnType": "DOUBLE",
+              "columnSize": 22
+            },
+            {
+              "columnName": "is_replicated",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "item_total",
+              "columnType": "DOUBLE",
+              "columnSize": 22
+            },
+            {
+              "columnName": "last_mile_distance",
+              "columnType": "DOUBLE",
+              "columnSize": 22
+            },
+            {
+              "columnName": "long_distance_applicable_on_order",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "long_distance_fee",
+              "columnType": "DOUBLE",
+              "columnSize": 22
+            },
+            {
+              "columnName": "mfr_pressed",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "mrp_items",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "net_bill_value_without_tax",
+              "columnType": "DOUBLE",
+              "columnSize": 22
+            },
+            {
+              "columnName": "net_payable_amount_after_tcs_and_tds",
+              "columnType": "DECIMAL",
+              "columnSize": 15
+            },
+            {
+              "columnName": "net_payable_amount_before_tcs_and_tds",
+              "columnType": "DECIMAL",
+              "columnSize": 15
+            },
+            {
+              "columnName": "order_date",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "order_payment_type",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "order_status",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "packing_and_service_charges",
+              "columnType": "DOUBLE",
+              "columnSize": 22
+            },
+            {
+              "columnName": "pick_up_status",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "refund_for_disputed_order",
+              "columnType": "DOUBLE",
+              "columnSize": 22
+            },
+            {
+              "columnName": "restaurant_id",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "restaurant_name",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "swiggy_platform_fee_chargeable_on",
+              "columnType": "DOUBLE",
+              "columnSize": 22
+            },
+            {
+              "columnName": "swiggy_platform_service_fee",
+              "columnType": "DOUBLE",
+              "columnSize": 22
+            },
+            {
+              "columnName": "swiggy_platform_servicefee_percent",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "tcs",
+              "columnType": "DOUBLE",
+              "columnSize": 22
+            },
+            {
+              "columnName": "tds",
+              "columnType": "DOUBLE",
+              "columnSize": 22
+            },
+            {
+              "columnName": "total_gst",
+              "columnType": "DOUBLE",
+              "columnSize": 22
+            },
+            {
+              "columnName": "total_of_order_level_adjustments",
+              "columnType": "DOUBLE",
+              "columnSize": 22
+            },
+            {
+              "columnName": "total_swiggy_fee",
+              "columnType": "DOUBLE",
+              "columnSize": 22
+            },
+            {
+              "columnName": "total_swiggy_service_fee",
+              "columnType": "DOUBLE",
+              "columnSize": 22
+            },
+            {
+              "columnName": "mcd_store_code",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "business_date",
+              "columnType": "DATE",
+              "columnSize": 10
+            },
+            {
+              "columnName": "invoice_number",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "payout_amount",
+              "columnType": "DECIMAL",
+              "columnSize": 15
+            },
+            {
+              "columnName": "payout_date",
+              "columnType": "DATE",
+              "columnSize": 10
+            },
+            {
+              "columnName": "pos_id",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "pos_total_amount",
+              "columnType": "DECIMAL",
+              "columnSize": 15
+            },
+            {
+              "columnName": "pos_total_tax",
+              "columnType": "DOUBLE",
+              "columnSize": 22
+            },
+            {
+              "columnName": "receipt_number",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "reference_number",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "actual_packaging_charge",
+              "columnType": "DOUBLE",
+              "columnSize": 22
+            },
+            {
+              "columnName": "dot_pe_order_cancelled_stage",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "dot_pe_order_status_description",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "cancelled_by",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "current_utr",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "nodal_utr",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "order_category",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "subway_store_code",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            }
+          ]
+        },
+        {
+          "tableName": "swiggy_promo",
+          "columns": [
+            {
+              "columnName": "order_id",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "brand_name",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "coupon_code",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "date",
+              "columnType": "DATE",
+              "columnSize": 10
+            },
+            {
+              "columnName": "day",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "discount_total",
+              "columnType": "DOUBLE",
+              "columnSize": 22
+            },
+            {
+              "columnName": "dow",
+              "columnType": "INT",
+              "columnSize": 10
+            },
+            {
+              "columnName": "freebie_cost",
+              "columnType": "DOUBLE",
+              "columnSize": 22
+            },
+            {
+              "columnName": "freebie_discount",
+              "columnType": "DOUBLE",
+              "columnSize": 22
+            },
+            {
+              "columnName": "freebie_item",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "freebie_sale_price",
+              "columnType": "DOUBLE",
+              "columnSize": 22
+            },
+            {
+              "columnName": "gmv",
+              "columnType": "DOUBLE",
+              "columnSize": 22
+            },
+            {
+              "columnName": "hour_of_day",
+              "columnType": "INT",
+              "columnSize": 10
+            },
+            {
+              "columnName": "month",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "remarks",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "rid",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "store_code",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "user_cohort",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "user_type",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "images",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "reason",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            }
+          ]
+        },
+        {
+          "tableName": "swiggy_igcc",
+          "columns": [
+            {
+              "columnName": "id",
+              "columnType": "BIGINT",
+              "columnSize": 19
+            },
+            {
+              "columnName": "created_date",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "updated_date",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "arrived_time",
+              "columnType": "DATETIME",
+              "columnSize": 26
+            },
+            {
+              "columnName": "brand_name",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "business_entity",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "comments",
+              "columnType": "TEXT",
+              "columnSize": 65535
+            },
+            {
+              "columnName": "de_wait_time",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "delivered_time",
+              "columnType": "DATETIME",
+              "columnSize": 26
+            },
+            {
+              "columnName": "dt",
+              "columnType": "DATE",
+              "columnSize": 10
+            },
+            {
+              "columnName": "food_issue_id",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "fraud_flag",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "group_name",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "images",
+              "columnType": "TEXT",
+              "columnSize": 65535
+            },
+            {
+              "columnName": "impacted_item",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "impacted_item_id",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "kam_poc",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "l1issue",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "l2issue",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "order_id",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "ordered_time",
+              "columnType": "DATETIME",
+              "columnSize": 26
+            },
+            {
+              "columnName": "p2d",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "pickedup_time",
+              "columnType": "DATETIME",
+              "columnSize": 26
+            },
+            {
+              "columnName": "resolutions_amount",
+              "columnType": "DECIMAL",
+              "columnSize": 15
+            },
+            {
+              "columnName": "restaurant_id",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            },
+            {
+              "columnName": "vm_poc",
+              "columnType": "VARCHAR",
+              "columnSize": 255
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

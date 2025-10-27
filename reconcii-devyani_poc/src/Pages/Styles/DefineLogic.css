@@ -1,0 +1,69 @@
+.logicView {
+  /* display: flex; */
+}
+.titleView {
+  width: 200px;
+  padding-top: 35px;
+}
+.fieldMiddleView {
+  /* display: flex; */
+  overflow-y: scroll;
+  width: 100%;
+}
+.titleViewSubLogin {
+  width: 200px;
+  padding: 35px 10px 0px 15px;
+  display: flex;
+}
+.fieldView {
+  /* margin: 0px 0px 10px 0px; */
+  min-width: max-content;
+}
+.titleDiv {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 23px;
+}
+.fieldValueView {
+  display: flex;
+  align-items: center;
+}
+.ddSelection {
+  min-width: 400px;
+  width: 100%;
+  padding: 7px 7px;
+  display: flex;
+  gap: 10px;
+  border: 1px solid lightgray;
+  border-radius: 5px;
+  background-color: var(--bg-color);
+}
+.customField {
+  border-radius: 5px;
+  border: 1px solid lightgray;
+  height: 36px;
+  width: 500px;
+  font-size: 14px;
+  padding: 0px 5px;
+  background-color: transparent;
+}
+.input {
+  border-radius: 5px;
+  border: 1px solid lightgray;
+  height: 30px;
+  width: 62px;
+  font-size: 14px;
+  padding: 0px 5px;
+  margin: 10px 5px;
+}
+.bottomButton {
+  display: flex;
+  gap: 5px;
+  justify-content: space-between;
+}
+.rightSideView {
+  /* width: 210px; */
+  padding: 15px 0px 0px 20px;
+  /* display: flex; */
+  /* gap: 10px; */
+}

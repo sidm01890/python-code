@@ -1,0 +1,10 @@
+
+.after-login-view {
+  background-color: var(--background-color);
+  color: var(--text-color);
+}
+
+button {
+  background-color: var(--primary-color);
+  color: var(--text-color);
+}

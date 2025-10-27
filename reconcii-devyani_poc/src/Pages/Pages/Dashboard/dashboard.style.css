@@ -1,0 +1,61 @@
+.filter-row {
+  display: flex;
+  background-color: #f5f5f5;
+  padding: 15px;
+  border-radius: 5px;
+  flex-direction: row;
+  justify-content: space-between;
+}
+
+.blank-dashboard {
+  width: 30%;
+}
+
+.selected-store-div {
+  display: flex;
+  background-color: #ffffff;
+  border-radius: 5px;
+  gap: 10px;
+  margin-top: -10px;
+  margin-bottom: 20px;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.selected-store-div > div {
+  display: flex;
+  background-color: #f5f5f5;
+  padding: 10px;
+  border-radius: 5px;
+}
+
+.selected-store-div > div.selected {
+  background-color: #205ca970;
+  color: #ffffff;
+}
+
+.selected-store-div > div > img,
+.selected-store-div > div > a > img {
+  height: 24px;
+  width: 24px;
+  margin-right: 10px;
+}
+
+.custom-download-button {
+  all: unset;
+  font-size: 11px;
+  background-color: #f5f5f5;
+  color: var(--button-bg-color);
+  padding: 3px 5px;
+  border-radius: 5px;
+  margin-left: 5px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.custom-download-button img {
+  height: 12px;
+  width: 12px;
+  margin-left: 5px;
+}

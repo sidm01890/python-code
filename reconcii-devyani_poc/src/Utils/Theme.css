@@ -1,0 +1,39 @@
+:root {
+  /* Light Theme */
+  --background-color: #205ca9;
+  --text-color: #1a2229;
+  --primary-color: #49d9df;
+  --secondary-color: #e0e0e0;
+  --body-background: #ffffff;
+  --card-background: #f5f5f5;
+
+  --light-color: rgb(237, 240, 249, 1);
+  --bg-color: rgb(237, 240, 249, 1);
+  --text-primary: rgb(124, 135, 159, 1);
+  --text-secondary: #000000;
+  --button-bg-color: rgb(13, 110, 253, 1);
+  --button-bg-hidden-color: rgb(13, 110, 253, 0.6);
+  --default-boxShadow: 0 4px 6px -1px rgb(0 0 0 / 0.1),
+    0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --danger: rgb(187, 33, 36, 1);
+}
+
+[data-theme="dark"] {
+  /* Dark Theme */
+  --background-color: #1e1e1e;
+  --text-color: #f0f7eb;
+  --primary-color: #1e1e1e;
+  --secondary-color: #343a40;
+  --body-background: #121212;
+  --card-background: #1e1e1e;
+
+  --light-color: rgb(237, 240, 249, 1);
+  --bg-color: rgb(237, 240, 249, 1);
+  --text-primary: rgb(124, 135, 159, 1);
+  --text-secondary: #ffffff;
+  --button-bg-color: #bb86fc;
+  --button-bg-hidden-color: rgb(13, 110, 253, 0.6);
+  --default-boxShadow: 0 4px 6px -1px rgb(0 0 0 / 0.1),
+    0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --danger: rgb(187, 33, 36, 1);
+}
