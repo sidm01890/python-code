@@ -1,5 +1,5 @@
 """
-Sheet Data routes - converted from Node.js
+Sheet Data routes
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
@@ -36,7 +36,7 @@ async def generate_sheet_data(
     db: AsyncSession = Depends(get_sso_db),
     current_user: UserDetails = Depends(get_current_user)
 ):
-    """Generate sheet data - converted from Node.js"""
+    """Generate sheet data"""
     try:
         # Implement sheet data generation logic
         from app.models.sso import (
@@ -88,7 +88,7 @@ async def get_sheet_data_status(
     db: AsyncSession = Depends(get_sso_db),
     current_user: UserDetails = Depends(get_current_user)
 ):
-    """Get sheet data generation status - converted from Node.js"""
+    """Get sheet data generation status"""
     try:
         # Implement status checking logic
         # In a real implementation, this would check a jobs table
@@ -134,7 +134,7 @@ async def get_sheet_data(
     db: AsyncSession = Depends(get_sso_db),
     current_user: UserDetails = Depends(get_current_user)
 ):
-    """Get sheet data - converted from Node.js"""
+    """Get sheet data"""
     try:
         # Parse store codes
         store_codes_list = [code.strip() for code in store_codes.split(",")]

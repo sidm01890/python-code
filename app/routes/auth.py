@@ -26,7 +26,7 @@ class LoginRequest(BaseModel):
 class LoginResponse(BaseModel):
     access_token: str
     token_type: str
-    user: dict  # Match Node.js response format
+    user: dict
 
 
 class RegisterRequest(BaseModel):
@@ -75,7 +75,7 @@ async def login(
             detail="Invalid credentials"
         )
     
-    # Create access token - match Node.js format exactly
+    # Create access token
     access_token = create_access_token(
         data={
             "id": user.id,
@@ -116,7 +116,7 @@ async def register(
             detail="Username already registered"
         )
     
-    # Create new user - match Node.js field names
+    # Create new user
     user_data = {
         "username": register_data.username,
         "email": register_data.email,
@@ -139,7 +139,7 @@ async def login_alias(
     login_data: LoginRequest,
     db: AsyncSession = Depends(get_sso_db)
 ):
-    """Alias for login endpoint - matches Node.js behavior"""
+    """Alias for login endpoint"""
     return await login(login_data, db)
 
 

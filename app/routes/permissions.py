@@ -1,5 +1,5 @@
 """
-Permission management routes - converted from Node.js
+Permission management routes
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -50,7 +50,7 @@ async def create_permission(
     db: AsyncSession = Depends(get_sso_db),
     current_user: UserDetails = Depends(get_current_user)
 ):
-    """Create or update a permission - converted from Node.js"""
+    """Create or update a permission"""
     try:
         if not permission_data.permission_name or not permission_data.permission_code or not permission_data.module_id or not permission_data.tool_id:
             raise HTTPException(
@@ -128,11 +128,11 @@ async def get_all_permissions(
     db: AsyncSession = Depends(get_sso_db),
     current_user: UserDetails = Depends(get_current_user)
 ):
-    """Get all permissions - converted from Node.js"""
+    """Get all permissions"""
     try:
         permissions = await Permission.get_all_by_module(db, request_data.module_id)
         
-        # Format response to match Node.js structure
+        # Format response
         permission_list = []
         for permission in permissions:
             permission_list.append({
@@ -173,7 +173,7 @@ async def delete_permission(
     db: AsyncSession = Depends(get_sso_db),
     current_user: UserDetails = Depends(get_current_user)
 ):
-    """Delete permission - converted from Node.js"""
+    """Delete permission"""
     try:
         permission = await Permission.get_by_id(db, delete_data.id)
         

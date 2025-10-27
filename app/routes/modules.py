@@ -1,5 +1,5 @@
 """
-Module management routes - converted from Node.js
+Module management routes
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -46,7 +46,7 @@ async def create_module(
     db: AsyncSession = Depends(get_sso_db),
     current_user: UserDetails = Depends(get_current_user)
 ):
-    """Create or update a module - converted from Node.js"""
+    """Create or update a module"""
     try:
         if not module_data.module_name or not module_data.tool_id:
             raise HTTPException(
@@ -107,13 +107,13 @@ async def get_all_modules(
     db: AsyncSession = Depends(get_sso_db),
     current_user: UserDetails = Depends(get_current_user)
 ):
-    """Get all modules - converted from Node.js"""
+    """Get all modules"""
     try:
         modules = await Module.get_all_by_tool(
             db, request_data.tool_id, request_data.organization_id
         )
         
-        # Format response to match Node.js structure
+        # Format response
         module_list = []
         for module in modules:
             module_list.append({
@@ -150,7 +150,7 @@ async def delete_module(
     db: AsyncSession = Depends(get_sso_db),
     current_user: UserDetails = Depends(get_current_user)
 ):
-    """Delete module - converted from Node.js"""
+    """Delete module"""
     try:
         module = await Module.get_by_id(db, delete_data.id)
         

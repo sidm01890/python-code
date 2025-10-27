@@ -1,5 +1,5 @@
 """
-Audit Log management routes - converted from Node.js
+Audit Log management routes
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status, Request
@@ -65,7 +65,7 @@ async def create_log(
     db: AsyncSession = Depends(get_sso_db),
     current_user: UserDetails = Depends(get_current_user)
 ):
-    """Create audit log entry - converted from Node.js"""
+    """Create audit log entry"""
     try:
         # Get client IP
         client_ip = (
@@ -101,7 +101,7 @@ async def get_audit_logs(
     db: AsyncSession = Depends(get_sso_db),
     current_user: UserDetails = Depends(get_current_user)
 ):
-    """Get audit logs with filters - converted from Node.js"""
+    """Get audit logs with filters"""
     try:
         # Parse dates
         start_date = datetime.fromisoformat(request_data.startDate.replace('Z', '+00:00'))
@@ -120,7 +120,7 @@ async def get_audit_logs(
             db, start_date, end_date, username_filter, request_data.action
         )
         
-        # Format response to match Node.js structure
+        # Format response
         log_list = []
         for log in logs:
             log_list.append({
@@ -160,12 +160,12 @@ async def get_all_organization_users(
     db: AsyncSession = Depends(get_sso_db),
     current_user: UserDetails = Depends(get_current_user)
 ):
-    """Get all organization users - converted from Node.js"""
+    """Get all organization users"""
     try:
         # Get users by organization
         users = await UserDetails.get_all_by_organization(db, current_user.organization_id)
         
-        # Format response to match Node.js structure
+        # Format response
         user_list = []
         for user in users:
             user_list.append({

@@ -1,5 +1,5 @@
 """
-User management routes - converted from Node.js
+User management routes
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -78,7 +78,7 @@ async def create_user(
     db: AsyncSession = Depends(get_sso_db),
     current_user: UserDetails = Depends(get_current_user)
 ):
-    """Create new user - converted from Node.js"""
+    """Create new user"""
     try:
         # Validate required fields
         if not user_data.username or not user_data.password or not user_data.name or not user_data.email or not user_data.organization_id:
@@ -156,7 +156,7 @@ async def update_user(
     db: AsyncSession = Depends(get_sso_db),
     current_user: UserDetails = Depends(get_current_user)
 ):
-    """Update user - converted from Node.js"""
+    """Update user"""
     try:
         user = await UserDetails.get_by_id(db, update_data.id)
         if not user:
@@ -221,7 +221,7 @@ async def delete_user(
     db: AsyncSession = Depends(get_sso_db),
     current_user: UserDetails = Depends(get_current_user)
 ):
-    """Delete user - converted from Node.js"""
+    """Delete user"""
     try:
         user = await UserDetails.get_by_id(db, user_id)
         if not user:
@@ -265,7 +265,7 @@ async def update_password(
     db: AsyncSession = Depends(get_sso_db),
     current_user: UserDetails = Depends(get_current_user)
 ):
-    """Update password - converted from Node.js"""
+    """Update password"""
     try:
         if not password_data.id or not password_data.password:
             raise HTTPException(
@@ -308,12 +308,12 @@ async def get_all_users(
     db: AsyncSession = Depends(get_sso_db),
     current_user: UserDetails = Depends(get_current_user)
 ):
-    """Get all users by organization - converted from Node.js"""
+    """Get all users by organization"""
     try:
         # Get users by organization_id
         users = await UserDetails.get_all_by_organization(db, request_data.organization_id)
         
-        # Format response to match Node.js structure
+        # Format response
         user_list = []
         for user in users:
             user_list.append({
@@ -347,7 +347,7 @@ async def get_user_modules(
     db: AsyncSession = Depends(get_sso_db),
     current_user: UserDetails = Depends(get_current_user)
 ):
-    """Get user modules - converted from Node.js"""
+    """Get user modules"""
     try:
         # Get user module mappings
         from app.models.sso import UserModuleMapping, Module, Permission
@@ -389,7 +389,7 @@ async def update_user_module_mapping(
     db: AsyncSession = Depends(get_sso_db),
     current_user: UserDetails = Depends(get_current_user)
 ):
-    """Update user module mapping - converted from Node.js"""
+    """Update user module mapping"""
     try:
         if not mapping_data.user_id or not mapping_data.module_permission_mapping:
             raise HTTPException(

@@ -1,5 +1,5 @@
 """
-Group management routes - converted from Node.js
+Group management routes
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -59,7 +59,7 @@ async def create_group(
     db: AsyncSession = Depends(get_sso_db),
     current_user: UserDetails = Depends(get_current_user)
 ):
-    """Create or update a group - converted from Node.js"""
+    """Create or update a group"""
     try:
         if not group_data.group_name or not group_data.tool_id:
             raise HTTPException(
@@ -150,13 +150,13 @@ async def get_all_groups(
     db: AsyncSession = Depends(get_sso_db),
     current_user: UserDetails = Depends(get_current_user)
 ):
-    """Get all groups - converted from Node.js"""
+    """Get all groups"""
     try:
         groups = await Group.get_all_by_tool_and_org(
             db, request_data.tool_id, request_data.organization_id
         )
         
-        # Format response to match Node.js structure
+        # Format response
         group_list = []
         for group in groups:
             group_list.append({
@@ -196,7 +196,7 @@ async def delete_group(
     db: AsyncSession = Depends(get_sso_db),
     current_user: UserDetails = Depends(get_current_user)
 ):
-    """Delete group - converted from Node.js"""
+    """Delete group"""
     try:
         group = await Group.get_by_id(db, delete_data.id)
         
@@ -235,7 +235,7 @@ async def get_group_modules(
     db: AsyncSession = Depends(get_sso_db),
     current_user: UserDetails = Depends(get_current_user)
 ):
-    """Get group modules - converted from Node.js"""
+    """Get group modules"""
     try:
         # Implement group module mapping query
         from app.models.sso import GroupModuleMapping, Module, Permission
@@ -276,7 +276,7 @@ async def update_group_module_mapping(
     db: AsyncSession = Depends(get_sso_db),
     current_user: UserDetails = Depends(get_current_user)
 ):
-    """Update group module mapping - converted from Node.js"""
+    """Update group module mapping"""
     try:
         if not mapping_data.group_id or not mapping_data.module_permission_mapping:
             raise HTTPException(

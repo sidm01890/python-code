@@ -1,5 +1,5 @@
 """
-Reconciliation routes - converted from Node.js
+Reconciliation routes
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status, Request
@@ -54,7 +54,7 @@ async def check_reconciliation_status(
     db: AsyncSession = Depends(get_sso_db),
     current_user: UserDetails = Depends(get_current_user)
 ):
-    """Check reconciliation status - converted from Node.js"""
+    """Check reconciliation status"""
     try:
         # Implement reconciliation status check logic
         from app.models.sso import ZomatoVsPosSummary, ThreepoDashboard
@@ -96,7 +96,7 @@ async def generate_reconciliation_excel(
     db: AsyncSession = Depends(get_sso_db),
     current_user: UserDetails = Depends(get_current_user)
 ):
-    """Generate reconciliation Excel - converted from Node.js"""
+    """Generate reconciliation Excel"""
     try:
         # Implement Excel generation logic
         from app.models.sso import ZomatoVsPosSummary, ThreepoDashboard
@@ -160,7 +160,7 @@ async def generate_receivable_receipt_excel(
     db: AsyncSession = Depends(get_sso_db),
     current_user: UserDetails = Depends(get_current_user)
 ):
-    """Generate receivable receipt Excel - converted from Node.js"""
+    """Generate receivable receipt Excel"""
     try:
         # Implement receivable receipt Excel generation
         from app.models.sso import ZomatoVsPosSummary
@@ -213,7 +213,7 @@ async def check_generation_status(
     db: AsyncSession = Depends(get_sso_db),
     current_user: UserDetails = Depends(get_current_user)
 ):
-    """Check generation status - converted from Node.js"""
+    """Check generation status"""
     try:
         # Implement status checking logic
         # In a real implementation, this would check a jobs table
@@ -232,7 +232,7 @@ async def check_generation_status(
                 "status": "completed",
                 "progress": 100,
                 "message": "Generation completed successfully",
-                "download_url": f"/api/node/reconciliation/download/{request_data.job_id}.xlsx"
+                "download_url": f"/api/reconciliation/download/{request_data.job_id}.xlsx"
             }
         }
         
@@ -250,7 +250,7 @@ async def get_three_po_dashboard_data(
     db: AsyncSession = Depends(get_sso_db),
     current_user: UserDetails = Depends(get_current_user)
 ):
-    """Get 3PO dashboard data - converted from Node.js"""
+    """Get 3PO dashboard data"""
     try:
         # Implement 3PO dashboard data logic
         from app.models.sso import ThreepoDashboard
@@ -302,7 +302,7 @@ async def get_instore_dashboard_data(
     db: AsyncSession = Depends(get_sso_db),
     current_user: UserDetails = Depends(get_current_user)
 ):
-    """Get instore dashboard data - converted from Node.js"""
+    """Get instore dashboard data"""
     try:
         # Implement instore dashboard data logic
         from app.models.sso import Store
@@ -347,7 +347,7 @@ async def generate_common_trm(
     db: AsyncSession = Depends(get_sso_db),
     current_user: UserDetails = Depends(get_current_user)
 ):
-    """Generate common TRM - converted from Node.js"""
+    """Generate common TRM"""
     try:
         # Implement TRM generation logic
         from app.models.sso import Trm
@@ -401,7 +401,7 @@ async def download_file(
     db: AsyncSession = Depends(get_sso_db),
     current_user: UserDetails = Depends(get_current_user)
 ):
-    """Download generated file - converted from Node.js"""
+    """Download generated file"""
     try:
         # Implement file download logic
         import os
@@ -420,7 +420,7 @@ async def download_file(
         return {
             "success": True,
             "message": f"File {filename} is ready for download",
-            "download_url": f"/api/node/reconciliation/download/{filename}"
+            "download_url": f"/api/reconciliation/download/{filename}"
         }
         
     except HTTPException:
@@ -438,7 +438,7 @@ async def get_all_cities(
     db: AsyncSession = Depends(get_sso_db),
     current_user: UserDetails = Depends(get_current_user)
 ):
-    """Get all cities - converted from Node.js"""
+    """Get all cities"""
     try:
         # Implement cities query
         from app.models.sso import Store
@@ -474,7 +474,7 @@ async def get_stores_by_cities(
     db: AsyncSession = Depends(get_sso_db),
     current_user: UserDetails = Depends(get_current_user)
 ):
-    """Get stores by cities - converted from Node.js"""
+    """Get stores by cities"""
     try:
         # Implement stores query by city IDs
         from app.models.sso import Store
@@ -509,7 +509,7 @@ async def get_missing_store_mappings(
     db: AsyncSession = Depends(get_sso_db),
     current_user: UserDetails = Depends(get_current_user)
 ):
-    """Get missing store mappings for 3PO - converted from Node.js"""
+    """Get missing store mappings for 3PO"""
     try:
         # Implement missing store mappings logic
         from app.models.sso import Store

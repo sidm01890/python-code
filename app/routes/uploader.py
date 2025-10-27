@@ -1,5 +1,5 @@
 """
-File uploader routes - converted from Node.js
+File uploader routes
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Query
@@ -63,7 +63,7 @@ async def upload_files(
     db: AsyncSession = Depends(get_sso_db),
     current_user: UserDetails = Depends(get_current_user)
 ):
-    """Upload multiple files - converted from Node.js"""
+    """Upload multiple files"""
     try:
         if not type:
             raise HTTPException(
@@ -187,7 +187,7 @@ async def get_upload_status(
     db: AsyncSession = Depends(get_sso_db),
     current_user: UserDetails = Depends(get_current_user)
 ):
-    """Get upload status - converted from Node.js"""
+    """Get upload status"""
     try:
         upload_record = await UploadRecord.get_by_id(db, upload_id)
         
@@ -232,7 +232,7 @@ async def get_all_uploads(
     db: AsyncSession = Depends(get_sso_db),
     current_user: UserDetails = Depends(get_current_user)
 ):
-    """Get all uploads with pagination - converted from Node.js"""
+    """Get all uploads with pagination"""
     try:
         uploads, total_count = await UploadRecord.get_all_with_pagination(
             db, page, limit, status, type
@@ -282,7 +282,7 @@ async def delete_upload(
     db: AsyncSession = Depends(get_sso_db),
     current_user: UserDetails = Depends(get_current_user)
 ):
-    """Delete upload - converted from Node.js"""
+    """Delete upload"""
     try:
         upload_record = await UploadRecord.get_by_id(db, upload_id)
         

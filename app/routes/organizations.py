@@ -1,5 +1,5 @@
 """
-Organization management routes - converted from Node.js
+Organization management routes
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -83,7 +83,7 @@ async def create_organization(
     db: AsyncSession = Depends(get_sso_db),
     current_user: UserDetails = Depends(get_current_user)
 ):
-    """Create a new organization - converted from Node.js"""
+    """Create a new organization"""
     try:
         # Check if organization unit name already exists
         # Check if organization unit name already exists
@@ -170,7 +170,7 @@ async def get_all_organizations(
     db: AsyncSession = Depends(get_sso_db),
     current_user: UserDetails = Depends(get_current_user)
 ):
-    """Get all organizations - converted from Node.js"""
+    """Get all organizations"""
     try:
         # Get all organizations
         from app.models.sso import Organization
@@ -196,7 +196,7 @@ async def update_organization(
     db: AsyncSession = Depends(get_sso_db),
     current_user: UserDetails = Depends(get_current_user)
 ):
-    """Update organization - converted from Node.js"""
+    """Update organization"""
     try:
         # Implement organization update logic
         from app.models.sso import Organization
@@ -229,7 +229,7 @@ async def delete_organization(
     db: AsyncSession = Depends(get_sso_db),
     current_user: UserDetails = Depends(get_current_user)
 ):
-    """Delete organization - converted from Node.js"""
+    """Delete organization"""
     try:
         # Implement organization deletion logic
         from app.models.sso import Organization, UserDetails
@@ -269,7 +269,7 @@ async def assign_tools(
     db: AsyncSession = Depends(get_sso_db),
     current_user: UserDetails = Depends(get_current_user)
 ):
-    """Assign tools to organization - converted from Node.js"""
+    """Assign tools to organization"""
     try:
         # Implement tool assignment logic
         from app.models.sso import OrganizationTool, Organization, Tool, Module
@@ -351,7 +351,7 @@ async def get_organization_tools(
     db: AsyncSession = Depends(get_sso_db),
     current_user: UserDetails = Depends(get_current_user)
 ):
-    """Get all tools for an organization - converted from Node.js"""
+    """Get all tools for an organization"""
     try:
         # Implement organization tools query
         from app.models.sso import OrganizationTool, Tool, Module
@@ -395,7 +395,7 @@ async def get_dashboard_stats(
     db: AsyncSession = Depends(get_sso_db),
     current_user: UserDetails = Depends(get_current_user)
 ):
-    """Get dashboard statistics - converted from Node.js"""
+    """Get dashboard statistics"""
     try:
         # Implement dashboard statistics logic
         from app.models.sso import UserDetails, OrganizationTool, Organization
@@ -449,7 +449,7 @@ async def get_organization_modules(
     db: AsyncSession = Depends(get_sso_db),
     current_user: UserDetails = Depends(get_current_user)
 ):
-    """Get organization modules - converted from Node.js"""
+    """Get organization modules"""
     try:
         # Implement organization modules query
         from app.models.sso import OrganizationTool, Module, Tool
@@ -495,7 +495,7 @@ async def update_organization_module_mapping(
     db: AsyncSession = Depends(get_sso_db),
     current_user: UserDetails = Depends(get_current_user)
 ):
-    """Update organization module mapping - converted from Node.js"""
+    """Update organization module mapping"""
     try:
         if not mapping_data.organization_id or not mapping_data.organization_module_mapping:
             raise HTTPException(

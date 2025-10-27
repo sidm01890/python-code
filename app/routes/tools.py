@@ -1,5 +1,5 @@
 """
-Tool management routes - converted from Node.js
+Tool management routes
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -51,7 +51,7 @@ async def create_tool(
     db: AsyncSession = Depends(get_sso_db),
     current_user: UserDetails = Depends(get_current_user)
 ):
-    """Create a new tool - converted from Node.js"""
+    """Create a new tool"""
     try:
         if not tool_data.tool_name:
             raise HTTPException(
@@ -95,11 +95,11 @@ async def get_all_tools(
     db: AsyncSession = Depends(get_sso_db),
     current_user: UserDetails = Depends(get_current_user)
 ):
-    """Get all tools - converted from Node.js"""
+    """Get all tools"""
     try:
         tools = await Tool.get_all(db)
         
-        # Format response to match Node.js structure
+        # Format response
         tool_list = []
         for tool in tools:
             tool_list.append({
@@ -133,7 +133,7 @@ async def get_tool_by_id(
     db: AsyncSession = Depends(get_sso_db),
     current_user: UserDetails = Depends(get_current_user)
 ):
-    """Get tool by ID - converted from Node.js"""
+    """Get tool by ID"""
     try:
         tool = await Tool.get_by_id(db, tool_id)
         
@@ -169,7 +169,7 @@ async def update_tool(
     db: AsyncSession = Depends(get_sso_db),
     current_user: UserDetails = Depends(get_current_user)
 ):
-    """Update tool - converted from Node.js"""
+    """Update tool"""
     try:
         tool = await Tool.get_by_id(db, update_data.id)
         
@@ -228,7 +228,7 @@ async def delete_tool(
     db: AsyncSession = Depends(get_sso_db),
     current_user: UserDetails = Depends(get_current_user)
 ):
-    """Delete tool - converted from Node.js"""
+    """Delete tool"""
     try:
         tool = await Tool.get_by_id(db, delete_data.id)
         
