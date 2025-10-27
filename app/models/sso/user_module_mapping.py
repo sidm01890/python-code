@@ -1,5 +1,5 @@
 """
-UserModuleMapping model - converted from Node.js
+UserModuleMapping model
 """
 
 from sqlalchemy import Column, Integer, BigInteger, Boolean, ForeignKey

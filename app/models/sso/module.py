@@ -1,5 +1,5 @@
 """
-Module model - converted from Node.js
+Module model
 """
 
 from sqlalchemy import Column, Integer, String, ForeignKey, Index

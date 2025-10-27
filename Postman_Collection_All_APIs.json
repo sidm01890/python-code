@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Reconcii Admin API - All 47 APIs",
-    "description": "Complete API collection for Python FastAPI implementation converted from Node.js",
+    "description": "Complete API collection for Python FastAPI implementation",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "version": "1.0.0"
   },
@@ -1103,9 +1103,9 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/node/reconciliation/populate-threepo-dashboard",
+              "raw": "{{base_url}}/api/reconciliation/populate-threepo-dashboard",
               "host": ["{{base_url}}"],
-              "path": ["api", "node", "reconciliation", "populate-threepo-dashboard"]
+              "path": ["api", "reconciliation", "populate-threepo-dashboard"]
             }
           }
         },
@@ -1128,9 +1128,9 @@
               "raw": "{\n  \"start_date\": \"2024-01-01\",\n  \"end_date\": \"2024-01-31\",\n  \"organization_id\": 1\n}"
             },
             "url": {
-              "raw": "{{base_url}}/api/node/reconciliation/generate-excel",
+              "raw": "{{base_url}}/api/reconciliation/generate-excel",
               "host": ["{{base_url}}"],
-              "path": ["api", "node", "reconciliation", "generate-excel"]
+              "path": ["api", "reconciliation", "generate-excel"]
             }
           }
         },
@@ -1153,9 +1153,9 @@
               "raw": "{\n  \"start_date\": \"2024-01-01\",\n  \"end_date\": \"2024-01-31\",\n  \"organization_id\": 1\n}"
             },
             "url": {
-              "raw": "{{base_url}}/api/node/reconciliation/generate-receivable-receipt-excel",
+              "raw": "{{base_url}}/api/reconciliation/generate-receivable-receipt-excel",
               "host": ["{{base_url}}"],
-              "path": ["api", "node", "reconciliation", "generate-receivable-receipt-excel"]
+              "path": ["api", "reconciliation", "generate-receivable-receipt-excel"]
             }
           }
         },
@@ -1178,9 +1178,9 @@
               "raw": "{\n  \"job_id\": \"job-123-456-789\"\n}"
             },
             "url": {
-              "raw": "{{base_url}}/api/node/reconciliation/generation-status",
+              "raw": "{{base_url}}/api/reconciliation/generation-status",
               "host": ["{{base_url}}"],
-              "path": ["api", "node", "reconciliation", "generation-status"]
+              "path": ["api", "reconciliation", "generation-status"]
             }
           }
         },
@@ -1203,9 +1203,9 @@
               "raw": "{\n  \"start_date\": \"2024-01-01\",\n  \"end_date\": \"2024-01-31\",\n  \"organization_id\": 1\n}"
             },
             "url": {
-              "raw": "{{base_url}}/api/node/reconciliation/threePODashboardData",
+              "raw": "{{base_url}}/api/reconciliation/threePODashboardData",
               "host": ["{{base_url}}"],
-              "path": ["api", "node", "reconciliation", "threePODashboardData"]
+              "path": ["api", "reconciliation", "threePODashboardData"]
             }
           }
         },
@@ -1228,9 +1228,9 @@
               "raw": "{\n  \"start_date\": \"2024-01-01\",\n  \"end_date\": \"2024-01-31\",\n  \"organization_id\": 1\n}"
             },
             "url": {
-              "raw": "{{base_url}}/api/node/reconciliation/instore-data",
+              "raw": "{{base_url}}/api/reconciliation/instore-data",
               "host": ["{{base_url}}"],
-              "path": ["api", "node", "reconciliation", "instore-data"]
+              "path": ["api", "reconciliation", "instore-data"]
             }
           }
         },
@@ -1253,9 +1253,9 @@
               "raw": "{\n  \"start_date\": \"2024-01-01\",\n  \"end_date\": \"2024-01-31\",\n  \"organization_id\": 1\n}"
             },
             "url": {
-              "raw": "{{base_url}}/api/node/reconciliation/generate-common-trm",
+              "raw": "{{base_url}}/api/reconciliation/generate-common-trm",
               "host": ["{{base_url}}"],
-              "path": ["api", "node", "reconciliation", "generate-common-trm"]
+              "path": ["api", "reconciliation", "generate-common-trm"]
             }
           }
         },
@@ -1270,9 +1270,9 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/node/reconciliation/download/sample-file.xlsx",
+              "raw": "{{base_url}}/api/reconciliation/download/sample-file.xlsx",
               "host": ["{{base_url}}"],
-              "path": ["api", "node", "reconciliation", "download", "sample-file.xlsx"]
+              "path": ["api", "reconciliation", "download", "sample-file.xlsx"]
             }
           }
         },
@@ -1287,9 +1287,9 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/node/reconciliation/cities",
+              "raw": "{{base_url}}/api/reconciliation/cities",
               "host": ["{{base_url}}"],
-              "path": ["api", "node", "reconciliation", "cities"]
+              "path": ["api", "reconciliation", "cities"]
             }
           }
         },
@@ -1312,9 +1312,9 @@
               "raw": "{\n  \"city_ids\": [1, 2, 3]\n}"
             },
             "url": {
-              "raw": "{{base_url}}/api/node/reconciliation/stores",
+              "raw": "{{base_url}}/api/reconciliation/stores",
               "host": ["{{base_url}}"],
-              "path": ["api", "node", "reconciliation", "stores"]
+              "path": ["api", "reconciliation", "stores"]
             }
           }
         },
@@ -1329,9 +1329,9 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/node/reconciliation/public/threepo/missingStoreMappings",
+              "raw": "{{base_url}}/api/reconciliation/public/threepo/missingStoreMappings",
               "host": ["{{base_url}}"],
-              "path": ["api", "node", "reconciliation", "public", "threepo", "missingStoreMappings"]
+              "path": ["api", "reconciliation", "public", "threepo", "missingStoreMappings"]
             }
           }
         }

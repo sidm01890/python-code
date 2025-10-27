@@ -1,5 +1,5 @@
 """
-Group model - converted from Node.js
+Group model
 """
 
 from sqlalchemy import Column, BigInteger, String, Integer, ForeignKey, Index
@@ -24,7 +24,7 @@ class Group(Base):
     created_by = Column(String(255), nullable=True)
     updated_by = Column(String(255), nullable=True)
     
-    # Relationships - matching Node.js associations
+    # Relationships
     tool = relationship("Tool", back_populates="groups")
     group_module_mappings = relationship("GroupModuleMapping", back_populates="group")
     users = relationship("UserDetails", back_populates="group")

@@ -1,5 +1,5 @@
 """
-GroupModuleMapping model - converted from Node.js
+GroupModuleMapping model
 """
 
 from sqlalchemy import Column, BigInteger, Integer, ForeignKey

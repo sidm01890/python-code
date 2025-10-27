@@ -1,5 +1,5 @@
 """
-AuditLog model - converted from Node.js
+AuditLog model
 """
 
 from sqlalchemy import Column, BigInteger, String, Text, DateTime, Index

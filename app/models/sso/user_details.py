@@ -1,5 +1,5 @@
 """
-User Details model for SSO database - Updated to match Node.js schema exactly
+User Details model for SSO database
 """
 
 from sqlalchemy import Column, BigInteger, String, Boolean, DateTime, Text, Integer
@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 class UserDetails(Base):
-    """User Details model - matches Node.js schema exactly"""
+    """User Details model"""
     __tablename__ = "user_details"
     
     id = Column(BigInteger, primary_key=True, autoincrement=True, index=True)
@@ -42,7 +42,7 @@ class UserDetails(Base):
     reset_otp = Column(String(6), nullable=True)
     reset_otp_expires = Column(DateTime, nullable=True)
     
-    # Relationships - matching Node.js associations
+    # Relationships
     # Note: Relationships will be added after all models are loaded to avoid circular imports
     
     @classmethod

@@ -1,5 +1,5 @@
 """
-Sheet Data models - converted from Node.js
+Sheet Data models
 """
 
 from sqlalchemy import Column, String, Date, Numeric, DateTime, Index

@@ -1,5 +1,5 @@
 """
-OrganizationTool model - converted from Node.js
+OrganizationTool model
 """
 
 from sqlalchemy import Column, BigInteger, Integer, Boolean, DateTime, ForeignKey, Index

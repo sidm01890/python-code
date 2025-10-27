@@ -93,7 +93,7 @@ app.include_router(modules.router, prefix="/api/module", tags=["Modules"])
 app.include_router(groups.router, prefix="/api/group", tags=["Groups"])
 app.include_router(permissions.router, prefix="/api/permission", tags=["Permissions"])
 app.include_router(audit_log.router, prefix="/api/audit_log", tags=["Audit Logs"])
-app.include_router(reconciliation.router, prefix="/api/node/reconciliation", tags=["Reconciliation"])
+app.include_router(reconciliation.router, prefix="/api/reconciliation", tags=["Reconciliation"])
 app.include_router(uploader.router, prefix="/api/uploader", tags=["File Upload"])
 app.include_router(sheet_data.router, prefix="/api/sheetData", tags=["Sheet Data"])
 

@@ -23,7 +23,7 @@ def get_password_hash(password: str) -> str:
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
-    """Create JWT access token - matches Node.js format exactly"""
+    """Create JWT access token"""
     to_encode = data.copy()
     
     if expires_delta:
@@ -31,14 +31,14 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     else:
         expire = datetime.utcnow() + timedelta(hours=24)
     
-    # Match Node.js JWT payload format exactly
+    # JWT payload format
     to_encode.update({
         "exp": expire,
-        "id": data.get("id"),           # Match Node.js
-        "email": data.get("email"),     # Match Node.js
-        "role": data.get("role"),       # Match Node.js
-        "organization": data.get("organization"),  # Match Node.js
-        "name": data.get("name"),       # Match Node.js
+        "id": data.get("id"),
+        "email": data.get("email"),
+        "role": data.get("role"),
+        "organization": data.get("organization"),
+        "name": data.get("name"),
         "jti": data.get("username")     # Add jti field for username lookup
     })
     encoded_jwt = jwt.encode(to_encode, settings.jwt_secret, algorithm=settings.jwt_algorithm)

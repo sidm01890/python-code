@@ -1,5 +1,5 @@
 """
-Organization model - converted from Node.js
+Organization model
 """
 
 from sqlalchemy import Column, BigInteger, String, Text, Boolean, DateTime, Index
@@ -30,7 +30,7 @@ class Organization(Base):
     created_date = Column(DateTime, nullable=True, default=datetime.utcnow)
     updated_date = Column(DateTime, nullable=True, default=datetime.utcnow)
     
-    # Relationships - matching Node.js associations
+    # Relationships
     organization_tools = relationship("OrganizationTool", back_populates="organization")
     users = relationship("UserDetails", back_populates="organization")
     

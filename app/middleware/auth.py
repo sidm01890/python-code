@@ -17,7 +17,7 @@ async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: AsyncSession = Depends(get_sso_db)
 ) -> UserDetails:
-    """Get current authenticated user - matches Node.js logic exactly"""
+    """Get current authenticated user"""
     token = credentials.credentials
     payload = verify_token(token)
     
@@ -28,16 +28,16 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    # Match Node.js authentication logic exactly
-    user_id = payload.get("id")  # Not "sub" - match Node.js
-    jti = payload.get("jti")     # Username from JWT - match Node.js
+    # Authentication logic
+    user_id = payload.get("id")
+    jti = payload.get("jti")     # Username from JWT
     
     user = None
     if jti:
-        # Match Node.js: if decoded?.jti, find by username
+        # If jti exists, find by username
         user = await UserDetails.get_by_username(db, jti)
     else:
-        # Match Node.js: else find by ID
+        # Otherwise find by ID
         user = await UserDetails.get_by_id(db, int(user_id))
     
     if not user:

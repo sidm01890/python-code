@@ -1,5 +1,5 @@
 """
-Upload model - converted from Node.js
+Upload model
 """
 
 from sqlalchemy import Column, Integer, String, Text, BigInteger, DateTime, Index

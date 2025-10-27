@@ -1,5 +1,5 @@
 """
-Permission model - converted from Node.js
+Permission model
 """
 
 from sqlalchemy import Column, Integer, String, ForeignKey, Index

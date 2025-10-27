@@ -1,5 +1,5 @@
 """
-Tool model - converted from Node.js
+Tool model
 """
 
 from sqlalchemy import Column, Integer, String, Boolean, Index
