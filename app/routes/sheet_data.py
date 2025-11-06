@@ -4,10 +4,10 @@ Sheet Data routes
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.config.database import get_sso_db
+from app.config.database import get_main_db
 from app.middleware.auth import get_current_user
 from app.models.sso.user_details import UserDetails
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 import logging
@@ -18,9 +18,11 @@ logger = logging.getLogger(__name__)
 
 
 class GenerateSheetDataRequest(BaseModel):
-    start_date: str
-    end_date: str
-    store_codes: List[str]
+    model_config = ConfigDict(populate_by_name=True)  # Allow both camelCase and snake_case
+    
+    start_date: str = Field(..., alias="startDate")
+    end_date: str = Field(..., alias="endDate")
+    store_codes: List[str] = Field(..., alias="stores")
 
 
 class SheetDataRequest(BaseModel):
@@ -33,13 +35,14 @@ class SheetDataRequest(BaseModel):
 @router.post("/generate")
 async def generate_sheet_data(
     request_data: GenerateSheetDataRequest,
-    db: AsyncSession = Depends(get_sso_db),
+    db: AsyncSession = Depends(get_main_db),
     current_user: UserDetails = Depends(get_current_user)
 ):
     """Generate sheet data"""
     try:
         # Implement sheet data generation logic
-        from app.models.sso import (
+        # All tables are in devyani (main_db), not SSO
+        from app.models.main.sheet_data import (
             ZomatoPosVs3poData, Zomato3poVsPosData, Zomato3poVsPosRefundData,
             OrdersNotInPosData, OrdersNotIn3poData
         )
@@ -85,7 +88,7 @@ async def generate_sheet_data(
 @router.get("/status/{job_id}")
 async def get_sheet_data_status(
     job_id: str,
-    db: AsyncSession = Depends(get_sso_db),
+    db: AsyncSession = Depends(get_main_db),
     current_user: UserDetails = Depends(get_current_user)
 ):
     """Get sheet data generation status"""
@@ -131,7 +134,7 @@ async def get_sheet_data(
     start_date: str = Query(..., description="Start date for data filtering"),
     end_date: str = Query(..., description="End date for data filtering"),
     store_codes: str = Query(..., description="Comma-separated store codes"),
-    db: AsyncSession = Depends(get_sso_db),
+    db: AsyncSession = Depends(get_main_db),
     current_user: UserDetails = Depends(get_current_user)
 ):
     """Get sheet data"""
@@ -140,7 +143,8 @@ async def get_sheet_data(
         store_codes_list = [code.strip() for code in store_codes.split(",")]
         
         # Implement sheet data retrieval logic
-        from app.models.sso import (
+        # All tables are in devyani (main_db), not SSO
+        from app.models.main.sheet_data import (
             ZomatoPosVs3poData, Zomato3poVsPosData, Zomato3poVsPosRefundData,
             OrdersNotInPosData, OrdersNotIn3poData
         )

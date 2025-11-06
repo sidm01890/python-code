@@ -244,6 +244,17 @@ class ThreepoDashboard(Base):
             raise
     
     @classmethod
+    async def get_all(cls, db: AsyncSession, limit: int = 100):
+        """Get all records"""
+        try:
+            query = select(cls).limit(limit)
+            result = await db.execute(query)
+            return result.scalars().all()
+        except Exception as e:
+            logger.error(f"Error getting all threepo_dashboard: {e}")
+            return []
+    
+    @classmethod
     async def get_by_date_range(cls, db: AsyncSession, start_date: str, end_date: str, store_codes: list = None):
         """Get records by date range and store codes"""
         try:

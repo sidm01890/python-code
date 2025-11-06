@@ -5,6 +5,7 @@ Application settings and configuration
 from pydantic_settings import BaseSettings
 from typing import Optional
 import os
+from urllib.parse import quote_plus
 
 
 class Settings(BaseSettings):
@@ -32,7 +33,7 @@ class Settings(BaseSettings):
     sso_db_host: str = "localhost"
     sso_db_user: str = "root"
     sso_db_password: str = "NewStrongPassword123!"
-    sso_db_name: str = "bercos_sso"
+    sso_db_name: str = "devyani_sso"
     sso_db_port: int = 3306
     
     # Database - Main (Application Data)
@@ -74,6 +75,9 @@ class Settings(BaseSettings):
     redis_port: int = 6379
     redis_db: int = 0
     
+    # Task Executor Configuration (for parallel processing)
+    task_executor_workers: int = 10  # Number of worker threads for background tasks
+    
     class Config:
         env_file = ".env"
         case_sensitive = False
@@ -86,10 +90,30 @@ settings = Settings()
 def get_database_urls():
     """Get database URLs based on environment"""
     if settings.environment == "production":
-        sso_url = f"mysql+aiomysql://{settings.production_sso_db_user}:{settings.production_sso_db_password}@{settings.production_sso_db_host}:{settings.sso_db_port}/{settings.production_sso_db_name}"
-        main_url = f"mysql+aiomysql://{settings.production_main_db_user}:{settings.production_main_db_password}@{settings.production_main_db_host}:{settings.main_db_port}/{settings.production_main_db_name}"
+        sso_user = quote_plus(settings.production_sso_db_user)
+        sso_pass = quote_plus(settings.production_sso_db_password)
+        main_user = quote_plus(settings.production_main_db_user)
+        main_pass = quote_plus(settings.production_main_db_password)
+        sso_url = (
+            f"mysql+aiomysql://{sso_user}:{sso_pass}"
+            f"@{settings.production_sso_db_host}:{settings.sso_db_port}/{settings.production_sso_db_name}"
+        )
+        main_url = (
+            f"mysql+aiomysql://{main_user}:{main_pass}"
+            f"@{settings.production_main_db_host}:{settings.main_db_port}/{settings.production_main_db_name}"
+        )
     else:
-        sso_url = f"mysql+aiomysql://{settings.sso_db_user}:{settings.sso_db_password}@{settings.sso_db_host}:{settings.sso_db_port}/{settings.sso_db_name}"
-        main_url = f"mysql+aiomysql://{settings.main_db_user}:{settings.main_db_password}@{settings.main_db_host}:{settings.main_db_port}/{settings.main_db_name}"
+        sso_user = quote_plus(settings.sso_db_user)
+        sso_pass = quote_plus(settings.sso_db_password)
+        main_user = quote_plus(settings.main_db_user)
+        main_pass = quote_plus(settings.main_db_password)
+        sso_url = (
+            f"mysql+aiomysql://{sso_user}:{sso_pass}"
+            f"@{settings.sso_db_host}:{settings.sso_db_port}/{settings.sso_db_name}"
+        )
+        main_url = (
+            f"mysql+aiomysql://{main_user}:{main_pass}"
+            f"@{settings.main_db_host}:{settings.main_db_port}/{settings.main_db_name}"
+        )
     
     return sso_url, main_url

@@ -12,7 +12,9 @@ import asyncio
 import logging
 from typing import Dict, Any
 from dotenv import load_dotenv
-from app.config.database import create_engines, test_connections
+from app.config.database import create_engines, test_connections, close_connections
+from app.config.executor import create_task_executor, shutdown_task_executor
+from app.config.settings import settings
 from app.workers.tasks import run_scheduled_tasks
 
 # Configure logging
@@ -28,11 +30,9 @@ load_dotenv()
 # Environment validation
 def validate_environment():
     """Validate required environment variables"""
+    # Keep startup lightweight: only validate JWT vars if present
     required_vars = [
-        "DATABASE_URL",
-        "SSO_DATABASE_URL", 
-        "JWT_SECRET_KEY",
-        "JWT_ALGORITHM"
+        "JWT_ALGORITHM",
     ]
     
     missing_vars = []
@@ -113,7 +113,12 @@ async def startup_event():
         logger.info("🔍 Testing database connections...")
         await test_connections()
         
+        # Initialize task executor for parallel processing
+        logger.info("⚙️ Initializing task executor for parallel processing...")
+        create_task_executor(max_workers=settings.task_executor_workers)
+        
         logger.info("✅ Database connections established successfully")
+        logger.info("✅ Task executor initialized for parallel processing")
         logger.info("✅ Application startup completed")
         logger.info(f"🌐 API Documentation available at: http://localhost:{os.getenv('PORT', 8034)}/api-docs")
         
@@ -121,6 +126,24 @@ async def startup_event():
         logger.error(f"❌ Application startup failed: {e}")
         logger.error("Application will not start due to startup errors")
         raise
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Application shutdown tasks"""
+    try:
+        logger.info("🛑 Shutting down application...")
+        
+        # Shutdown task executor
+        await shutdown_task_executor()
+        
+        # Close database connections
+        await close_connections()
+        
+        logger.info("✅ Application shutdown completed")
+        
+    except Exception as e:
+        logger.error(f"❌ Error during shutdown: {e}")
 
 # Health check endpoint
 @app.get("/health")
@@ -145,7 +168,7 @@ app.include_router(permissions.router, prefix="/api/permission", tags=["Permissi
 app.include_router(audit_log.router, prefix="/api/audit_log", tags=["Audit Logs"])
 app.include_router(reconciliation.router, prefix="/api/reconciliation", tags=["Reconciliation"])
 app.include_router(uploader.router, prefix="/api/uploader", tags=["File Upload"])
-app.include_router(sheet_data.router, prefix="/api/sheetData", tags=["Sheet Data"])
+app.include_router(sheet_data.router, prefix="/api/sheet-data", tags=["Sheet Data"])
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8034))
