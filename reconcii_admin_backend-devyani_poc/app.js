@@ -62,6 +62,16 @@ app.use("/api/uploader", uploaderRoutes);
 
 app.use("/api/node/reconciliation", recoRoutes);
 // app.use("/api/node/reconciliation", reconciliationRoutes);
+// Health check endpoint
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    status: "healthy",
+    message: "Node.js API is running",
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || "development",
+  });
+});
+
 // Swagger documentation route
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
 
@@ -83,7 +93,7 @@ cron.schedule("0 0,12 * * *", async () => {
 // }, 10000);
 
 // Database connection and server startup
-const PORT = process.env.PORT || 8034;
+const PORT = process.env.PORT || 8080;
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

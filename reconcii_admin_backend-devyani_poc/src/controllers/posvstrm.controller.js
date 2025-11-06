@@ -63,76 +63,91 @@ const processBatch = async (records, batchSize = 1000) => {
   return batches;
 };
 
+// Internal function to generate common TRM table (no req/res required)
+const generateCommonTRMTableInternal = async () => {
+  const summaryData = [];
+  let totalProcessed = 0;
+  const queryInterface = db.bercos.getQueryInterface();
+
+  // Loop through each TRM provider
+  for (const provider of TRM_PROVIDERS) {
+    // Get the table name for the provider
+    const tableName = TRM_PROVIDER_TABLE[provider];
+    if (!tableName) {
+      console.warn(`No table mapping found for provider: ${provider}`);
+      continue;
+    }
+
+    // Check if source table exists
+    const sourceTableExists = await queryInterface.tableExists(tableName);
+    if (!sourceTableExists) {
+      console.warn(`[generateCommonTRMTableInternal] Source table '${tableName}' does not exist for provider '${provider}'. Skipping...`);
+      continue;
+    }
+
+    // Get the column mapping for the provider
+    const columnMapping = TRM_SUMMARY_TABLE_MAPPING[provider];
+    if (!columnMapping) {
+      console.warn(`No column mapping found for provider: ${provider}`);
+      continue;
+    }
+
+    // Read records from the provider's table
+    const records = await db[tableName].findAll({
+      raw: true,
+    });
+
+    // Process each record and map columns according to the mapping
+    for (const record of records) {
+      const mappedRecord = {
+        trm_name: provider, // Add the provider name as trm_name
+      };
+
+      // Map each column according to the mapping
+      for (const [summaryColumn, sourceColumn] of Object.entries(
+        columnMapping
+      )) {
+        mappedRecord[summaryColumn] = record[sourceColumn];
+      }
+
+      summaryData.push(mappedRecord);
+    }
+  }
+
+  // Save all records to summarised_trm_data table in batches
+  if (summaryData.length > 0) {
+    const batches = await processBatch(summaryData);
+
+    for (const batch of batches) {
+      await db.summarised_trm_data.bulkCreate(batch, {
+        updateOnDuplicate: [
+          "trm_uid",
+          "store_name",
+          "acquirer",
+          "payment_mode",
+          "card_issuer",
+          "card_type",
+          "card_network",
+          "card_colour",
+          "transaction_id",
+          "transaction_type_detail",
+          "amount",
+          "currency",
+          "transaction_date",
+          "rrn",
+          "cloud_ref_id",
+        ],
+      });
+      totalProcessed += batch.length;
+    }
+  }
+
+  return totalProcessed;
+};
+
 const generateCommonTRMTable = async (req, res) => {
   try {
-    const summaryData = [];
-    let totalProcessed = 0;
-
-    // Loop through each TRM provider
-    for (const provider of TRM_PROVIDERS) {
-      // Get the table name for the provider
-      const tableName = TRM_PROVIDER_TABLE[provider];
-      if (!tableName) {
-        console.warn(`No table mapping found for provider: ${provider}`);
-        continue;
-      }
-
-      // Get the column mapping for the provider
-      const columnMapping = TRM_SUMMARY_TABLE_MAPPING[provider];
-      if (!columnMapping) {
-        console.warn(`No column mapping found for provider: ${provider}`);
-        continue;
-      }
-
-      // Read records from the provider's table
-      const records = await db[tableName].findAll({
-        raw: true,
-      });
-
-      // Process each record and map columns according to the mapping
-      for (const record of records) {
-        const mappedRecord = {
-          trm_name: provider, // Add the provider name as trm_name
-        };
-
-        // Map each column according to the mapping
-        for (const [summaryColumn, sourceColumn] of Object.entries(
-          columnMapping
-        )) {
-          mappedRecord[summaryColumn] = record[sourceColumn];
-        }
-
-        summaryData.push(mappedRecord);
-      }
-    }
-
-    // Save all records to summarised_trm_data table in batches
-    if (summaryData.length > 0) {
-      const batches = await processBatch(summaryData);
-
-      for (const batch of batches) {
-        await db.summarised_trm_data.bulkCreate(batch, {
-          updateOnDuplicate: [
-            "trm_uid",
-            "store_name",
-            "acquirer",
-            "payment_mode",
-            "card_issuer",
-            "card_type",
-            "card_network",
-            "card_colour",
-            "transaction_id",
-            "transaction_type_detail",
-            "amount",
-            "currency",
-            "transaction_date",
-            "rrn",
-            "cloud_ref_id",
-          ],
-        });
-        totalProcessed += batch.length;
-      }
-    }
+    const totalProcessed = await generateCommonTRMTableInternal();
 
     res.status(200).json({
       success: true,
@@ -149,55 +164,70 @@ const generateCommonTRMTable = async (req, res) => {
   }
 };
 
+// Internal function to process orders data (no req/res required)
+const processOrdersDataInternal = async () => {
+  const summaryData = [];
+  let totalProcessed = 0;
+  const queryInterface = db.bercos.getQueryInterface();
+
+  // Check if orders table exists
+  const ordersTableExists = await queryInterface.tableExists("orders");
+  if (!ordersTableExists) {
+    console.warn("[processOrdersDataInternal] Orders table does not exist. Skipping orders processing...");
+    return 0;
+  }
+
+  // Get all orders where mode_name is in POS_MODES
+  const orders = await db.orders.findAll({
+    where: {
+      mode_name: {
+        [Op.in]: POS_MODES,
+      },
+      transaction_number: {
+        [Op.ne]: "-",
+      },
+    },
+    raw: true,
+  });
+
+  // Process each order and map columns according to POS_AND_SUMMARY_TABLE_MAPPING
+  for (const order of orders) {
+    const mappedRecord = {};
+
+    // Map each column according to the mapping
+    for (const [summaryColumn, sourceColumn] of Object.entries(
+      POS_AND_SUMMARY_TABLE_MAPPING
+    )) {
+      mappedRecord[summaryColumn] = order[sourceColumn];
+    }
+
+    summaryData.push(mappedRecord);
+  }
+
+  // Save all records to pos_vs_trm_summary table in batches
+  if (summaryData.length > 0) {
+    const batches = await processBatch(summaryData);
+
+    for (const batch of batches) {
+      await db.pos_vs_trm_summary.bulkCreate(batch, {
+        updateOnDuplicate: [
+          "pos_transaction_id",
+          "pos_date",
+          "pos_store",
+          "pos_mode_name",
+          "pos_amount",
+        ],
+      });
+      totalProcessed += batch.length;
+    }
+  }
+
+  return totalProcessed;
+};
+
 const processOrdersData = async (req, res) => {
   try {
-    const summaryData = [];
-    let totalProcessed = 0;
-
-    // Get all orders where mode_name is in POS_MODES
-    const orders = await db.orders.findAll({
-      where: {
-        mode_name: {
-          [Op.in]: POS_MODES,
-        },
-        transaction_number: {
-          [Op.ne]: "-",
-        },
-      },
-      raw: true,
-    });
-
-    // Process each order and map columns according to POS_AND_SUMMARY_TABLE_MAPPING
-    for (const order of orders) {
-      const mappedRecord = {};
-
-      // Map each column according to the mapping
-      for (const [summaryColumn, sourceColumn] of Object.entries(
-        POS_AND_SUMMARY_TABLE_MAPPING
-      )) {
-        mappedRecord[summaryColumn] = order[sourceColumn];
-      }
-
-      summaryData.push(mappedRecord);
-    }
-
-    // Save all records to pos_vs_trm_summary table in batches
-    if (summaryData.length > 0) {
-      const batches = await processBatch(summaryData);
-
-      for (const batch of batches) {
-        await db.pos_vs_trm_summary.bulkCreate(batch, {
-          updateOnDuplicate: [
-            "pos_transaction_id",
-            "pos_date",
-            "pos_store",
-            "pos_mode_name",
-            "pos_amount",
-          ],
-        });
-        totalProcessed += batch.length;
-      }
-    }
+    const totalProcessed = await processOrdersDataInternal();
 
     res.status(200).json({
       success: true,
@@ -214,99 +244,118 @@ const processOrdersData = async (req, res) => {
   }
 };
 
-const processTrmData = async (req, res) => {
-  try {
-    const summaryData = [];
-    let totalProcessed = 0;
-    let totalUpdated = 0;
-    let totalCreated = 0;
+// Internal function to process TRM data (no req/res required)
+const processTrmDataInternal = async () => {
+  const summaryData = [];
+  let totalProcessed = 0;
+  let totalUpdated = 0;
+  let totalCreated = 0;
+  const queryInterface = db.bercos.getQueryInterface();
 
-    // Get all TRM records where cloud_ref_id is not 0
-    const trmRecords = await db.summarised_trm_data.findAll({
-      where: {
-        cloud_ref_id: {
-          [Op.ne]: "0",
-        },
+  // Check if summarised_trm_data table exists
+  const trmDataTableExists = await queryInterface.tableExists("summarised_trm_data");
+  if (!trmDataTableExists) {
+    console.warn("[processTrmDataInternal] summarised_trm_data table does not exist. Skipping TRM data processing...");
+    return {
+      totalProcessed: 0,
+      totalUpdated: 0,
+      totalCreated: 0,
+    };
+  }
+
+  // Get all TRM records where cloud_ref_id is not 0
+  const trmRecords = await db.summarised_trm_data.findAll({
+    where: {
+      cloud_ref_id: {
+        [Op.ne]: "0",
       },
-      raw: true,
-    });
+    },
+    raw: true,
+  });
 
-    // Process each TRM record
-    for (const trmRecord of trmRecords) {
-      const mappedRecord = {};
+  // Process each TRM record
+  for (const trmRecord of trmRecords) {
+    const mappedRecord = {};
 
-      // Map each column according to the mapping
-      for (const [summaryColumn, sourceColumn] of Object.entries(
-        TRM_AND_SUMMARY_TABLE_MAPPING
-      )) {
-        if (summaryColumn === "trm_date") {
-          // Convert date format from DD/MM/YYYY HH:mm:ss AM/PM to MySQL datetime
-          const dateStr = trmRecord[sourceColumn];
-          if (dateStr) {
-            try {
-              const parsedDate = dayjs(dateStr, "DD/MM/YYYY hh:mm:ss A");
-              if (parsedDate.isValid()) {
-                mappedRecord[summaryColumn] = parsedDate.format(
-                  "YYYY-MM-DD HH:mm:ss"
-                );
-              } else {
-                console.warn(
-                  `Invalid date format for record: ${trmRecord.cloud_ref_id}, date: ${dateStr}`
-                );
-                mappedRecord[summaryColumn] = null;
-              }
-            } catch (error) {
+    // Map each column according to the mapping
+    for (const [summaryColumn, sourceColumn] of Object.entries(
+      TRM_AND_SUMMARY_TABLE_MAPPING
+    )) {
+      if (summaryColumn === "trm_date") {
+        // Convert date format from DD/MM/YYYY HH:mm:ss AM/PM to MySQL datetime
+        const dateStr = trmRecord[sourceColumn];
+        if (dateStr) {
+          try {
+            const parsedDate = dayjs(dateStr, "DD/MM/YYYY hh:mm:ss A");
+            if (parsedDate.isValid()) {
+              mappedRecord[summaryColumn] = parsedDate.format(
+                "YYYY-MM-DD HH:mm:ss"
+              );
+            } else {
               console.warn(
-                `Error parsing date for record: ${trmRecord.cloud_ref_id}, date: ${dateStr}`,
-                error
+                `Invalid date format for record: ${trmRecord.cloud_ref_id}, date: ${dateStr}`
               );
               mappedRecord[summaryColumn] = null;
             }
-          } else {
+          } catch (error) {
+            console.warn(
+              `Error parsing date for record: ${trmRecord.cloud_ref_id}, date: ${dateStr}`,
+              error
+            );
             mappedRecord[summaryColumn] = null;
           }
         } else {
-          mappedRecord[summaryColumn] = trmRecord[sourceColumn];
+          mappedRecord[summaryColumn] = null;
         }
-      }
-
-      // Check if record exists in pos_vs_trm_summary
-      const existingRecord = await db.pos_vs_trm_summary.findOne({
-        where: {
-          pos_transaction_id: trmRecord.cloud_ref_id,
-        },
-      });
-
-      if (existingRecord) {
-        // Update existing record
-        await existingRecord.update(mappedRecord);
-        totalUpdated++;
       } else {
-        // Add to batch for new record creation
-        summaryData.push(mappedRecord);
+        mappedRecord[summaryColumn] = trmRecord[sourceColumn];
       }
     }
 
-    // Save new records to pos_vs_trm_summary table in batches
-    if (summaryData.length > 0) {
-      const batches = await processBatch(summaryData);
+    // Check if record exists in pos_vs_trm_summary
+    const existingRecord = await db.pos_vs_trm_summary.findOne({
+      where: {
+        pos_transaction_id: trmRecord.cloud_ref_id,
+      },
+    });
 
-      for (const batch of batches) {
-        await db.pos_vs_trm_summary.bulkCreate(batch);
-        totalCreated += batch.length;
-      }
+    if (existingRecord) {
+      // Update existing record
+      await existingRecord.update(mappedRecord);
+      totalUpdated++;
+    } else {
+      // Add to batch for new record creation
+      summaryData.push(mappedRecord);
     }
+  }
 
-    totalProcessed = totalUpdated + totalCreated;
+  // Save new records to pos_vs_trm_summary table in batches
+  if (summaryData.length > 0) {
+    const batches = await processBatch(summaryData);
+
+    for (const batch of batches) {
+      await db.pos_vs_trm_summary.bulkCreate(batch);
+      totalCreated += batch.length;
+    }
+  }
+
+  totalProcessed = totalUpdated + totalCreated;
+
+  return {
+    totalProcessed,
+    totalUpdated,
+    totalCreated,
+  };
+};
+
+const processTrmData = async (req, res) => {
+  try {
+    const result = await processTrmDataInternal();
 
     res.status(200).json({
       success: true,
       message: "TRM data processed successfully",
-      data: {
-        totalProcessed,
-        totalUpdated,
-        totalCreated,
-      },
+      data: result,
     });
   } catch (error) {
     console.error("Error processing TRM data:", error);
@@ -320,6 +369,52 @@ const processTrmData = async (req, res) => {
 
 const calculatePosVsTrm = async (req, res) => {
   try {
+    console.log("[calculatePosVsTrm] Starting full reconciliation pipeline...");
+
+    // Step 1: Check if table exists, create if not
+    const queryInterface = db.bercos.getQueryInterface();
+    const tableExists = await queryInterface.tableExists("pos_vs_trm_summary");
+    
+    if (!tableExists) {
+      console.log("[calculatePosVsTrm] Table pos_vs_trm_summary does not exist. Creating table...");
+      await db.pos_vs_trm_summary.sync({ alter: false });
+      console.log("[calculatePosVsTrm] Table pos_vs_trm_summary created successfully");
+    } else {
+      console.log("[calculatePosVsTrm] Table pos_vs_trm_summary already exists");
+    }
+
+    // Step 2: Generate common TRM table (populate summarised_trm_data)
+    console.log("[calculatePosVsTrm] Step 1: Generating common TRM table...");
+    let trmProcessed = 0;
+    try {
+      trmProcessed = await generateCommonTRMTableInternal();
+      console.log(`[calculatePosVsTrm] Step 1 completed: ${trmProcessed} TRM records processed`);
+    } catch (error) {
+      console.warn(`[calculatePosVsTrm] Step 1 warning: ${error.message}. Continuing with other steps...`);
+    }
+
+    // Step 3: Process orders data (populate pos_vs_trm_summary with POS data)
+    console.log("[calculatePosVsTrm] Step 2: Processing orders data...");
+    let ordersProcessed = 0;
+    try {
+      ordersProcessed = await processOrdersDataInternal();
+      console.log(`[calculatePosVsTrm] Step 2 completed: ${ordersProcessed} orders processed`);
+    } catch (error) {
+      console.warn(`[calculatePosVsTrm] Step 2 warning: ${error.message}. Continuing with other steps...`);
+    }
+
+    // Step 4: Process TRM data (merge TRM data into pos_vs_trm_summary)
+    console.log("[calculatePosVsTrm] Step 3: Processing TRM data...");
+    let trmDataResult = { totalProcessed: 0, totalUpdated: 0, totalCreated: 0 };
+    try {
+      trmDataResult = await processTrmDataInternal();
+      console.log(`[calculatePosVsTrm] Step 3 completed: ${trmDataResult.totalProcessed} TRM records processed (${trmDataResult.totalUpdated} updated, ${trmDataResult.totalCreated} created)`);
+    } catch (error) {
+      console.warn(`[calculatePosVsTrm] Step 3 warning: ${error.message}. Continuing with reconciliation...`);
+    }
+
+    // Step 5: Calculate reconciliation status
+    console.log("[calculatePosVsTrm] Step 4: Calculating reconciliation status...");
     let totalProcessed = 0;
     let totalReconciled = 0;
     let totalUnreconciled = 0;
@@ -328,6 +423,10 @@ const calculatePosVsTrm = async (req, res) => {
     const records = await db.pos_vs_trm_summary.findAll({
       raw: true,
     });
+
+    if (records.length === 0) {
+      console.warn("[calculatePosVsTrm] No records found in pos_vs_trm_summary table. Make sure source tables (trm_mpr, orders) exist and have data.");
+    }
 
     // Process each record
     for (const record of records) {
@@ -376,6 +475,9 @@ const calculatePosVsTrm = async (req, res) => {
       totalProcessed++;
     }
 
+    console.log(`[calculatePosVsTrm] Step 4 completed: ${totalProcessed} records processed (${totalReconciled} reconciled, ${totalUnreconciled} unreconciled)`);
+    console.log("[calculatePosVsTrm] Full reconciliation pipeline completed successfully");
+
     res.status(200).json({
       success: true,
       message: "Reconciliation calculation completed successfully",
@@ -383,10 +485,15 @@ const calculatePosVsTrm = async (req, res) => {
         totalProcessed,
         totalReconciled,
         totalUnreconciled,
+        pipeline: {
+          trmRecordsProcessed: trmProcessed,
+          ordersProcessed: ordersProcessed,
+          trmDataMerged: trmDataResult.totalProcessed,
+        },
       },
     });
   } catch (error) {
-    console.error("Error calculating POS vs TRM reconciliation:", error);
+    console.error("[calculatePosVsTrm] Error calculating POS vs TRM reconciliation:", error);
     res.status(500).json({
       success: false,
       message: "Error calculating POS vs TRM reconciliation",

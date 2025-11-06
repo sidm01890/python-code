@@ -8,7 +8,7 @@
     "build": "vite build",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
-    "start": "env-cmd -f .env.local react-scripts start",
+    "start": "env-cmd -f .env.local vite",
     "start:local": "env-cmd -f .env.local npm-run-all -p watch-css start-js",
     "build:stag": "env-cmd -f .env.stag npm run-script build",
     "build:prod": "env-cmd -f .env.prod npm run-script build"
@@ -23,6 +23,7 @@
     "chart.js": "^4.4.4",
     "date-fns": "^3.6.0",
     "env-cmd": "^10.1.0",
+    "localtunnel": "^2.0.2",
     "moment": "^2.30.1",
     "react": "^18.3.1",
     "react-chartjs-2": "^5.2.0",

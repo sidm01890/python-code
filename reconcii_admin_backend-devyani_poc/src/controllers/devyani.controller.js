@@ -4,17 +4,26 @@ const { Op } = require("sequelize");
 // Get all cities
 const getAllCities = async (req, res) => {
   try {
+    console.log("[CITIES] Controller hit:", req.method, req.originalUrl);
     const cities = await db.devyani_city.findAll({
       order: [["city_name", "ASC"]],
       attributes: ["id", "city_id", "city_name"],
+      logging: (sql) => console.log("[CITIES] SQL:", sql),
     });
+
+    const responsePayload = {
+      success: true,
+      data: cities,
+    };
+
+    console.log("[CITIES] Response:", JSON.stringify(responsePayload));
 
     res.json({
       success: true,
       data: cities,
     });
   } catch (error) {
-    console.error("Error fetching cities:", error);
+    console.error("[CITIES] Error:", error);
     res.status(500).json({
       success: false,
       message: "Error fetching cities",
@@ -25,7 +34,15 @@ const getAllCities = async (req, res) => {
 // Get stores by multiple cities
 const getStoresByCities = async (req, res) => {
   try {
+    console.log("[STORES] Controller hit:", req.method, req.originalUrl);
+    
     const { startDate, endDate, cities } = req.body;
+
+    console.log("[STORES] Request params:", {
+      startDate,
+      endDate,
+      citiesCount: cities?.length || 0,
+    });
 
     if (!cities || cities.length < 1) {
       return res.status(400).json({
@@ -36,7 +53,8 @@ const getStoresByCities = async (req, res) => {
 
     let cityIdsMaps = cities?.map((city) => city?.city_id || city);
 
-    console.log("cityIdsMaps", cityIdsMaps);
+    console.log("[STORES] cityIdsMaps:", cityIdsMaps);
+    console.log("[STORES] Total city IDs:", cityIdsMaps.length);
 
     const whereClause = {
       city_id: { [Op.in]: cityIdsMaps },
@@ -49,6 +67,8 @@ const getStoresByCities = async (req, res) => {
     //   };
     // }
 
+    console.log("[STORES] WHERE clause:", JSON.stringify(whereClause));
+
     const stores = await db.devyani_store.findAll({
       where: whereClause,
       order: [["store_name", "ASC"]],
@@ -59,7 +79,10 @@ const getStoresByCities = async (req, res) => {
         "store_name",
         "city_id",
       ],
+      logging: (sql) => console.log("[STORES] SQL:", sql),
     });
+
+    console.log("[STORES] Found stores count:", stores.length);
 
     // Add posDataSync field to each store
     const storesWithSync = stores.map((store) => ({
@@ -67,12 +90,22 @@ const getStoresByCities = async (req, res) => {
       posDataSync: true,
     }));
 
+    const responsePayload = {
+      success: true,
+      data: storesWithSync,
+    };
+
+    console.log("[STORES] Response payload:", {
+      success: responsePayload.success,
+      dataCount: responsePayload.data.length,
+    });
+
     res.json({
       success: true,
       data: storesWithSync,
     });
   } catch (error) {
-    console.error("Error fetching stores:", error);
+    console.error("[STORES] Error:", error);
     res.status(500).json({
       success: false,
       message: "Error fetching stores",

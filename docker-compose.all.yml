@@ -1,0 +1,177 @@
+version: '3.8'
+
+services:
+  # Python FastAPI Backend
+  python-api:
+    build:
+      context: ./python
+      dockerfile: Dockerfile
+    container_name: devyani-python-api
+    ports:
+      - "8034:8034"
+    environment:
+      - ENVIRONMENT=production
+      - DEBUG=false
+      - PORT=8034
+      - SSO_DB_HOST=mysql_sso
+      - MAIN_DB_HOST=mysql_main
+      - REDIS_HOST=redis
+      - FEYNMANFLOW_API_URL=http://feynmanflow-api:8000
+    depends_on:
+      - mysql_sso
+      - mysql_main
+      - redis
+      - feynmanflow-api
+    volumes:
+      - ./python/app:/app/app
+      - ./python/reports:/app/reports
+    networks:
+      - devyani_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8034/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # FeynmanFlow Data Processing API
+  feynmanflow-api:
+    build:
+      context: ./FeynmanFlow-finance-0.1
+      dockerfile: Dockerfile
+    container_name: devyani-feynmanflow-api
+    ports:
+      - "8000:8000"
+    environment:
+      - DB_HOST=mysql_main
+      - DB_PORT=3306
+      - DB_USER=${MYSQL_USER:-app_user}
+      - DB_PASSWORD=${MYSQL_PASSWORD:-app_password}
+      - DB_NAME=${MAIN_DB_NAME:-devyani}
+    depends_on:
+      - mysql_main
+    volumes:
+      - ./FeynmanFlow-finance-0.1/app:/app/app
+      - ./FeynmanFlow-finance-0.1/uploads:/app/uploads
+    networks:
+      - devyani_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Node.js Express Backend
+  node-api:
+    build:
+      context: ./reconcii_admin_backend-devyani_poc
+      dockerfile: Dockerfile
+    container_name: devyani-node-api
+    ports:
+      - "8080:8080"
+    environment:
+      - NODE_ENV=production
+      - PORT=8080
+      - DB_HOST=mysql_sso
+      - DB_PORT=3306
+    depends_on:
+      - mysql_sso
+      - mysql_main
+    volumes:
+      - ./reconcii_admin_backend-devyani_poc:/app
+      - /app/node_modules
+    networks:
+      - devyani_network
+    restart: unless-stopped
+
+  # Frontend (Nginx serving static files)
+  frontend:
+    build:
+      context: ./reconcii-devyani_poc
+      dockerfile: Dockerfile.frontend
+    container_name: devyani-frontend
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - python-api
+      - node-api
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - devyani_network
+    restart: unless-stopped
+
+  # MySQL SSO Database
+  mysql_sso:
+    image: mysql:8.0
+    container_name: devyani-mysql-sso
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: ${SSO_DB_NAME:-devyani_sso}
+      MYSQL_USER: ${MYSQL_USER:-app_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-app_password}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_sso_data:/var/lib/mysql
+      - ./mysql_sso_init:/docker-entrypoint-initdb.d
+    networks:
+      - devyani_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-rootpassword}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MySQL Main Database
+  mysql_main:
+    image: mysql:8.0
+    container_name: devyani-mysql-main
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: ${MAIN_DB_NAME:-devyani}
+      MYSQL_USER: ${MYSQL_USER:-app_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-app_password}
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_main_data:/var/lib/mysql
+      - ./mysql_main_init:/docker-entrypoint-initdb.d
+    networks:
+      - devyani_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-rootpassword}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: devyani-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - devyani_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mysql_sso_data:
+  mysql_main_data:
+  redis_data:
+
+networks:
+  devyani_network:
+    driver: bridge
+

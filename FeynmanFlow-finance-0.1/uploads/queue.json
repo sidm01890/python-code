@@ -1,0 +1,375 @@
+{
+  "queue": [
+    {
+      "filename": "extended_financial_dataset_10000_20250605_014921.xlsx",
+      "original_filename": "extended_financial_dataset_10000.xlsx",
+      "upload_time": "2025-06-05T01:49:21.804025",
+      "status": "failed",
+      "retry_count": 0
+    },
+    {
+      "filename": "extended_financial_dataset_10000_20250605_015155.xlsx",
+      "original_filename": "extended_financial_dataset_10000.xlsx",
+      "upload_time": "2025-06-05T01:51:55.517222",
+      "status": "failed",
+      "retry_count": 0
+    },
+    {
+      "filename": "extended_financial_dataset_10000_20250605_020137.xlsx",
+      "original_filename": "extended_financial_dataset_10000.xlsx",
+      "upload_time": "2025-06-05T02:01:37.729831",
+      "status": "failed",
+      "retry_count": 0
+    },
+    {
+      "filename": "extended_financial_dataset_10000_20250605_020344.xlsx",
+      "original_filename": "extended_financial_dataset_10000.xlsx",
+      "upload_time": "2025-06-05T02:03:44.144482",
+      "status": "failed",
+      "retry_count": 0
+    },
+    {
+      "filename": "extended_financial_dataset_10000_20250605_020600.xlsx",
+      "original_filename": "extended_financial_dataset_10000.xlsx",
+      "upload_time": "2025-06-05T02:06:00.647207",
+      "status": "failed",
+      "retry_count": 0
+    },
+    {
+      "filename": "extended_financial_dataset_10000_20250605_021059.xlsx",
+      "original_filename": "extended_financial_dataset_10000.xlsx",
+      "upload_time": "2025-06-05T02:10:59.308365",
+      "status": "failed",
+      "retry_count": 0
+    },
+    {
+      "filename": "extended_financial_dataset_10000_20250605_021735.xlsx",
+      "original_filename": "extended_financial_dataset_10000.xlsx",
+      "upload_time": "2025-06-05T02:17:35.974838",
+      "status": "completed",
+      "retry_count": 0
+    },
+    {
+      "filename": "extended_financial_dataset_10000_20250605_055523.xlsx",
+      "original_filename": "extended_financial_dataset_10000.xlsx",
+      "upload_time": "2025-06-05T05:55:23.442163",
+      "status": "completed",
+      "retry_count": 0
+    },
+    {
+      "filename": "sales_dataset_1_20250605_060532.xlsx",
+      "original_filename": "sales_dataset_1.xlsx",
+      "upload_time": "2025-06-05T06:05:32.063532",
+      "status": "completed",
+      "retry_count": 0
+    },
+    {
+      "filename": "sales_dataset_1_20250605_065757.xlsx",
+      "original_filename": "sales_dataset_1.xlsx",
+      "upload_time": "2025-06-05T06:57:57.957330",
+      "status": "failed",
+      "retry_count": 0
+    },
+    {
+      "filename": "sales_dataset_2_20250605_065757.xlsx",
+      "original_filename": "sales_dataset_2.xlsx",
+      "upload_time": "2025-06-05T06:57:58.051774",
+      "status": "failed",
+      "retry_count": 0
+    },
+    {
+      "filename": "sales_dataset_1_20250605_070058.xlsx",
+      "original_filename": "sales_dataset_1.xlsx",
+      "upload_time": "2025-06-05T07:00:58.113040",
+      "status": "failed",
+      "retry_count": 0
+    },
+    {
+      "filename": "sales_dataset_2_20250605_070058.xlsx",
+      "original_filename": "sales_dataset_2.xlsx",
+      "upload_time": "2025-06-05T07:00:58.132636",
+      "status": "failed",
+      "retry_count": 0
+    },
+    {
+      "filename": "sales_dataset_1_20250605_071758.xlsx",
+      "original_filename": "sales_dataset_1.xlsx",
+      "upload_time": "2025-06-05T07:17:58.297464",
+      "status": "failed",
+      "retry_count": 0
+    },
+    {
+      "filename": "sales_dataset_2_20250605_071758.xlsx",
+      "original_filename": "sales_dataset_2.xlsx",
+      "upload_time": "2025-06-05T07:17:58.364241",
+      "status": "failed",
+      "retry_count": 0
+    },
+    {
+      "filename": "sales_dataset_4_20250605_075819.xlsx",
+      "original_filename": "sales_dataset_4.xlsx",
+      "upload_time": "2025-06-05T07:58:19.443479",
+      "status": "completed",
+      "retry_count": 0
+    },
+    {
+      "filename": "sales_dataset_4_20250605_080527.xlsx",
+      "original_filename": "sales_dataset_4.xlsx",
+      "upload_time": "2025-06-05T08:05:27.762535",
+      "status": "completed",
+      "retry_count": 0
+    },
+    {
+      "filename": "sales_dataset_3_20250605_080625.xlsx",
+      "original_filename": "sales_dataset_3.xlsx",
+      "upload_time": "2025-06-05T08:06:25.676763",
+      "status": "completed",
+      "retry_count": 0
+    },
+    {
+      "filename": "sales_dataset_2_20250605_080700.xlsx",
+      "original_filename": "sales_dataset_2.xlsx",
+      "upload_time": "2025-06-05T08:07:00.799734",
+      "status": "completed",
+      "retry_count": 0
+    },
+    {
+      "filename": "extended_financial_dataset_10000_20250605_082934.xlsx",
+      "original_filename": "extended_financial_dataset_10000.xlsx",
+      "upload_time": "2025-06-05T08:29:35.011677",
+      "status": "failed",
+      "retry_count": 0
+    },
+    {
+      "filename": "sales_dataset_4_20250605_082935.xlsx",
+      "original_filename": "sales_dataset_4.xlsx",
+      "upload_time": "2025-06-05T08:29:35.047808",
+      "status": "failed",
+      "retry_count": 0
+    },
+    {
+      "filename": "sales_dataset_4_20250605_090302.xlsx",
+      "original_filename": "sales_dataset_4.xlsx",
+      "upload_time": "2025-06-05T09:03:02.245405",
+      "status": "failed",
+      "retry_count": 0
+    },
+    {
+      "filename": "sales_dataset_3_20250605_091500.xlsx",
+      "original_filename": "sales_dataset_3.xlsx",
+      "upload_time": "2025-06-05T09:15:00.973874",
+      "status": "failed",
+      "retry_count": 0
+    },
+    {
+      "filename": "sales_dataset_4_20250605_091500.xlsx",
+      "original_filename": "sales_dataset_4.xlsx",
+      "upload_time": "2025-06-05T09:15:00.983835",
+      "status": "failed",
+      "retry_count": 0
+    },
+    {
+      "filename": "sales_dataset_3_20250605_202722.xlsx",
+      "original_filename": "sales_dataset_3.xlsx",
+      "upload_time": "2025-06-05T20:27:22.629831",
+      "status": "failed",
+      "retry_count": 0
+    },
+    {
+      "filename": "sales_dataset_4_20250605_202722.xlsx",
+      "original_filename": "sales_dataset_4.xlsx",
+      "upload_time": "2025-06-05T20:27:22.641859",
+      "status": "failed",
+      "retry_count": 0
+    },
+    {
+      "filename": "sales_dataset_4_20250605_203849.xlsx",
+      "original_filename": "sales_dataset_4.xlsx",
+      "upload_time": "2025-06-05T20:38:49.576026",
+      "status": "failed",
+      "retry_count": 0
+    },
+    {
+      "filename": "sales_dataset_3_20250605_203956.xlsx",
+      "original_filename": "sales_dataset_3.xlsx",
+      "upload_time": "2025-06-05T20:39:56.760247",
+      "status": "failed",
+      "retry_count": 0
+    },
+    {
+      "filename": "sales_dataset_4_20250605_203956.xlsx",
+      "original_filename": "sales_dataset_4.xlsx",
+      "upload_time": "2025-06-05T20:39:56.777257",
+      "status": "failed",
+      "retry_count": 0
+    },
+    {
+      "filename": "sales_dataset_3_20250605_204509.xlsx",
+      "original_filename": "sales_dataset_3.xlsx",
+      "upload_time": "2025-06-05T20:45:09.931153",
+      "status": "failed",
+      "retry_count": 0
+    },
+    {
+      "filename": "sales_dataset_4_20250605_204509.xlsx",
+      "original_filename": "sales_dataset_4.xlsx",
+      "upload_time": "2025-06-05T20:45:09.961816",
+      "status": "failed",
+      "retry_count": 0
+    },
+    {
+      "filename": "sales_dataset_3_20250605_205910.xlsx",
+      "original_filename": "sales_dataset_3.xlsx",
+      "upload_time": "2025-06-05T20:59:10.161531",
+      "status": "failed",
+      "retry_count": 0
+    },
+    {
+      "filename": "sales_dataset_4_20250605_205910.xlsx",
+      "original_filename": "sales_dataset_4.xlsx",
+      "upload_time": "2025-06-05T20:59:10.209376",
+      "status": "failed",
+      "retry_count": 0
+    },
+    {
+      "filename": "sales_dataset_3_20250605_211110.xlsx",
+      "original_filename": "sales_dataset_3.xlsx",
+      "upload_time": "2025-06-05T21:11:10.350409",
+      "status": "failed",
+      "retry_count": 0
+    },
+    {
+      "filename": "sales_dataset_4_20250605_211110.xlsx",
+      "original_filename": "sales_dataset_4.xlsx",
+      "upload_time": "2025-06-05T21:11:10.397254",
+      "status": "failed",
+      "retry_count": 0
+    },
+    {
+      "filename": "sales_dataset_3_20250605_213549.xlsx",
+      "original_filename": "sales_dataset_3.xlsx",
+      "upload_time": "2025-06-05T21:35:49.124011",
+      "status": "failed",
+      "retry_count": 0
+    },
+    {
+      "filename": "sales_dataset_3_20250605_213728.xlsx",
+      "original_filename": "sales_dataset_3.xlsx",
+      "upload_time": "2025-06-05T21:37:28.635321",
+      "status": "failed",
+      "retry_count": 0
+    },
+    {
+      "filename": "sales_dataset_2_20250606_090311.xlsx",
+      "original_filename": "sales_dataset_2.xlsx",
+      "upload_time": "2025-06-06T09:03:11.136234",
+      "status": "completed",
+      "retry_count": 0
+    },
+    {
+      "filename": "extended_financial_dataset_10000_20250606_090409.xlsx",
+      "original_filename": "extended_financial_dataset_10000.xlsx",
+      "upload_time": "2025-06-06T09:04:09.358316",
+      "status": "completed",
+      "retry_count": 0
+    },
+    {
+      "filename": "extended_financial_dataset_10000_20250606_090525.xlsx",
+      "original_filename": "extended_financial_dataset_10000.xlsx",
+      "upload_time": "2025-06-06T09:05:25.186270",
+      "status": "failed",
+      "retry_count": 0
+    },
+    {
+      "filename": "sales_dataset_1_20250606_121326.xlsx",
+      "original_filename": "sales_dataset_1.xlsx",
+      "upload_time": "2025-06-06T12:13:26.217332",
+      "status": "failed",
+      "retry_count": 0
+    },
+    {
+      "filename": "cleaned_financial_dataset_20250607_005405.xlsx",
+      "original_filename": "cleaned_financial_dataset.xlsx",
+      "upload_time": "2025-06-07T00:54:05.704357",
+      "status": "failed",
+      "retry_count": 0
+    },
+    {
+      "filename": "extended_financial_dataset_10000_20250609_164017.xlsx",
+      "original_filename": "extended_financial_dataset_10000.xlsx",
+      "upload_time": "2025-06-09T16:40:17.908528",
+      "status": "completed",
+      "retry_count": 0
+    },
+    {
+      "filename": "cleaned_financial_dataset_20250609_164143.xlsx",
+      "original_filename": "cleaned_financial_dataset.xlsx",
+      "upload_time": "2025-06-09T16:41:43.588368",
+      "status": "failed",
+      "retry_count": 0
+    },
+    {
+      "filename": "cleaned_financial_dataset_20250609_164805.xlsx",
+      "original_filename": "cleaned_financial_dataset.xlsx",
+      "upload_time": "2025-06-09T16:48:05.508787",
+      "status": "failed",
+      "retry_count": 0
+    },
+    {
+      "filename": "cleaned_financial_dataset_20250609_165305.xlsx",
+      "original_filename": "cleaned_financial_dataset.xlsx",
+      "upload_time": "2025-06-09T16:53:05.564300",
+      "status": "failed",
+      "retry_count": 0
+    },
+    {
+      "filename": "sales_dataset_3_20250630_034116.xlsx",
+      "original_filename": "sales_dataset_3.xlsx",
+      "upload_time": "2025-06-30T03:41:16.704686",
+      "status": "completed",
+      "retry_count": 0
+    },
+    {
+      "filename": "extended_financial_dataset_10000_20250630_034556.xlsx",
+      "original_filename": "extended_financial_dataset_10000.xlsx",
+      "upload_time": "2025-06-30T03:45:56.875432",
+      "status": "completed",
+      "retry_count": 0
+    },
+    {
+      "filename": "extended_financial_dataset_10000_20250630_034905.xlsx",
+      "original_filename": "extended_financial_dataset_10000.xlsx",
+      "upload_time": "2025-06-30T03:49:05.092628",
+      "status": "completed",
+      "retry_count": 0
+    },
+    {
+      "filename": "vectorexcel_20250713_040246.xlsx",
+      "original_filename": "vectorexcel.xlsx",
+      "upload_time": "2025-07-13T04:02:46.578614",
+      "status": "completed",
+      "retry_count": 0
+    },
+    {
+      "filename": "vectorexcel_20250713_040928.xlsx",
+      "original_filename": "vectorexcel.xlsx",
+      "upload_time": "2025-07-13T04:09:28.303589",
+      "status": "completed",
+      "retry_count": 0
+    },
+    {
+      "filename": "vectorexcel_20250713_041025.xlsx",
+      "original_filename": "vectorexcel.xlsx",
+      "upload_time": "2025-07-13T04:10:25.003268",
+      "status": "completed",
+      "retry_count": 0
+    },
+    {
+      "filename": "vectorexcel_20250717_232800.xlsx",
+      "original_filename": "vectorexcel.xlsx",
+      "upload_time": "2025-07-17T23:28:00.661778",
+      "status": "completed",
+      "retry_count": 0
+    }
+  ]
+}

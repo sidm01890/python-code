@@ -18,15 +18,22 @@ const useMakeLogs = () => {
     } catch (e) {
       console.error(e);
     }
+    // Fallback to userProfile saved from login response
+    if (!profileDetail || !profileDetail.username) {
+      try {
+        const userStr = localStorage.getItem("userProfile");
+        const user = JSON.parse(userStr || "{}");
+        profileDetail = { ...profileDetail, ...user };
+      } catch (e) {}
+    }
 
     let reqParams = {
-      username: profileData?.username || profileDetail?.username,
+      username: profileData?.username || profileDetail?.username || "unknown",
       user_email: profileData?.email || profileDetail?.email,
       role: "User",
       action: action,
       action_details: action_details,
       request: JSON.stringify(reqData),
-      response: JSON.stringify(resData),
       remarks: url,
     };
     try {

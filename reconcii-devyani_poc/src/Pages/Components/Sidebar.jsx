@@ -89,11 +89,17 @@ const Sidebar = () => {
       allowedModules = JSON.parse(allowedModuleStr);
       console.log("allowedModules", allowedModules);
       let allowedModulesArray = MANAGER_SIDEBAR?.filter((sideItem) =>
-        allowedModules?.includes(sideItem?.db_id)
+        Array.isArray(allowedModules) && allowedModules?.includes(sideItem?.db_id)
       );
-      setMenuArray(allowedModulesArray);
+      // Fallback: if no allowedModules provided, show full sidebar
+      if (!Array.isArray(allowedModules) || allowedModulesArray?.length === 0) {
+        setMenuArray(MANAGER_SIDEBAR);
+      } else {
+        setMenuArray(allowedModulesArray);
+      }
     } catch (e) {
-      localStorage.getItem("allowedModules");
+      // On parse errors or missing localStorage key, fall back to full sidebar
+      setMenuArray(MANAGER_SIDEBAR);
     }
   }, []);
 
@@ -124,7 +130,7 @@ const Sidebar = () => {
                 key={item?.id}
                 menuArray={item}
                 selectedIndex={selectedIndex}
-                onSelect={() => setSelectedIndex(index)}
+                setSelectedIndex={setSelectedIndex}
                 index={i}
               />
             );

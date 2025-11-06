@@ -149,144 +149,222 @@ const formulaForPosSummary = async () => {
 };
 
 const createPosSummaryRecords = async () => {
+  console.log("📍 [createPosSummaryRecords] Function started");
   try {
-    // Get POS order data with specific fields only
-    const posOrders = await db.orders.findAll({
-      attributes: [
-        "instance_id",
-        "store_name",
-        "date",
-        "payment",
-        "subtotal",
-        "discount",
-        "net_sale",
-        "gst_at_5_percent",
-        "gst_ecom_at_5_percent",
-        "packaging_charge",
-        "gross_amount",
-      ],
+    // Get total count first to process in batches
+    console.log("📍 [createPosSummaryRecords] Getting total count of POS orders...");
+    const totalCount = await db.orders.count({
       where: {
         online_order_taker: "ZOMATO",
       },
-      raw: true, // Get plain objects instead of model instances
+      logging: (sql) => {
+        console.log("📊 [SQL] createPosSummaryRecords - Count Query:");
+        console.log("   ", sql);
+      },
     });
+    console.log(`📍 [createPosSummaryRecords] Total POS orders found: ${totalCount}`);
 
-    if (!posOrders || posOrders.length === 0) {
+    if (totalCount === 0) {
       return;
     }
 
     // Get formulas for calculations
+    console.log("📍 [createPosSummaryRecords] Fetching POS summary formulas...");
     const formulas = await formulaForPosSummary();
+    console.log(`📍 [createPosSummaryRecords] Loaded ${Object.keys(formulas).length} formulas`);
 
     // Pre-compile regex for column extraction
     const columnRegex = /\b[a-zA-Z_][a-zA-Z0-9_]*\b/g;
 
     // Get all unique column names from formulas once
+    console.log("📍 [createPosSummaryRecords] Extracting unique columns from formulas...");
     const uniqueColumns = new Set();
     Object.values(formulas).forEach((formula) => {
       const matches = formula.match(columnRegex) || [];
       matches.forEach((col) => uniqueColumns.add(col));
     });
+    console.log(`📍 [createPosSummaryRecords] Found ${uniqueColumns.size} unique columns in formulas`);
 
-    // Prepare bulk operations
-    const bulkCreateRecords = [];
-    const bulkUpdateRecords = [];
+    // Process in batches to avoid memory issues
+    const BATCH_SIZE = 1000;
+    let offset = 0;
+    let totalProcessed = 0;
+    let totalCreated = 0;
+    let totalUpdated = 0;
 
-    // Get existing records in bulk
-    const existingRecords = await db.zomato_vs_pos_summary.findAll({
-      where: {
-        pos_order_id: posOrders.map((order) => order.instance_id),
-      },
-      raw: true,
-    });
-
-    // Create a map of existing records for faster lookup
-    const existingRecordsMap = new Map(
-      existingRecords.map((record) => [record.pos_order_id, record])
-    );
-
-    for (const order of posOrders) {
-      try {
-        // Create context object
-        const context = {};
-        for (const col of uniqueColumns) {
-          if (col === "0") continue;
-          else if (col === "slab_rate") {
-            context[col] = calculateSlabRate(order.payment) || 0;
-          } else {
-            context[col] = order[col] || 0;
-          }
-        }
-
-        // Calculate values using formulas
-        const calculatedValues = {};
-        for (const [key, formula] of Object.entries(formulas)) {
-          try {
-            let evaluableFormula = formula;
-            Object.entries(context).forEach(([col, value]) => {
-              evaluableFormula = evaluableFormula.replace(
-                new RegExp(`\\b${col}\\b`, "g"),
-                value
-              );
-            });
-            calculatedValues[key] = eval(evaluableFormula);
-          } catch (error) {
-            calculatedValues[key] = 0;
-          }
-        }
-
-        const recordData = {
-          pos_order_id: order.instance_id,
-          store_name: order.store_name,
-          order_date: order.date,
-          ...calculatedValues,
-          order_status_pos: "Delivered",
-          updated_at: new Date(),
-        };
-
-        if (existingRecordsMap.has(order.instance_id)) {
-          // Add to bulk update
-          bulkUpdateRecords.push({
-            ...recordData,
-            id: existingRecordsMap.get(order.instance_id).id,
-          });
-        } else {
-          // Add to bulk create
-          bulkCreateRecords.push({
-            ...recordData,
-            id: `ZVS_${order.instance_id}`,
-            reconciled_status: "PENDING",
-            created_at: new Date(),
-          });
-        }
-      } catch (error) {
-        console.error(
-          `Error processing order ${order.instance_id}:`,
-          error.message
-        );
-      }
-    }
-
-    // Perform bulk operations
-    if (bulkCreateRecords.length > 0) {
-      await db.zomato_vs_pos_summary.bulkCreate(bulkCreateRecords, {
-        ignoreDuplicates: true,
+    while (offset < totalCount) {
+      // Fetch batch of POS orders
+      console.log(`📍 [createPosSummaryRecords] Fetching batch: offset=${offset}, limit=${BATCH_SIZE}`);
+      const posOrders = await db.orders.findAll({
+        attributes: [
+          "instance_id",
+          "store_name",
+          "date",
+          "payment",
+          "subtotal",
+          "discount",
+          "net_sale",
+          "gst_at_5_percent",
+          "gst_ecom_at_5_percent",
+          "packaging_charge",
+          "gross_amount",
+        ],
+        where: {
+          online_order_taker: "ZOMATO",
+        },
+        raw: true,
+        limit: BATCH_SIZE,
+        offset: offset,
+        order: [["instance_id", "ASC"]],
+        logging: (sql) => {
+          console.log(`📊 [SQL] createPosSummaryRecords - Batch Query (offset ${offset}):`);
+          console.log("   ", sql);
+        },
       });
-    }
+      console.log(`📍 [createPosSummaryRecords] Fetched ${posOrders.length} orders in this batch`);
 
-    if (bulkUpdateRecords.length > 0) {
-      await Promise.all(
-        bulkUpdateRecords.map((record) =>
-          db.zomato_vs_pos_summary.update(record, { where: { id: record.id } })
-        )
+      if (!posOrders || posOrders.length === 0) {
+        break;
+      }
+
+      // Prepare bulk operations for this batch
+      const bulkCreateRecords = [];
+      const bulkUpdateRecords = [];
+
+      // Get existing records for this batch only
+      const orderIds = posOrders.map((order) => order.instance_id);
+      console.log(`📍 [createPosSummaryRecords] Checking ${orderIds.length} existing records in summary table...`);
+      const existingRecords = await db.zomato_vs_pos_summary.findAll({
+        where: {
+          pos_order_id: { [Op.in]: orderIds },
+        },
+        raw: true,
+        logging: (sql) => {
+          console.log(`📊 [SQL] createPosSummaryRecords - Check Existing Records Query (batch ${offset}):`);
+          console.log("   ", sql);
+        },
+      });
+      console.log(`📍 [createPosSummaryRecords] Found ${existingRecords.length} existing records to update`);
+
+      // Create a map of existing records for faster lookup
+      const existingRecordsMap = new Map(
+        existingRecords.map((record) => [record.pos_order_id, record])
       );
+
+      console.log(`📍 [createPosSummaryRecords] Processing ${posOrders.length} orders in batch ${offset}...`);
+      let processedInBatch = 0;
+      for (const order of posOrders) {
+        try {
+          processedInBatch++;
+          if (processedInBatch % 100 === 0) {
+            console.log(`📍 [createPosSummaryRecords] Processing order ${processedInBatch}/${posOrders.length} in batch ${offset}`);
+          }
+          // Create context object
+          const context = {};
+          for (const col of uniqueColumns) {
+            if (col === "0") continue;
+            else if (col === "slab_rate") {
+              context[col] = calculateSlabRate(order.payment) || 0;
+            } else {
+              context[col] = order[col] || 0;
+            }
+          }
+
+          // Calculate values using formulas
+          const calculatedValues = {};
+          for (const [key, formula] of Object.entries(formulas)) {
+            try {
+              let evaluableFormula = formula;
+              Object.entries(context).forEach(([col, value]) => {
+                evaluableFormula = evaluableFormula.replace(
+                  new RegExp(`\\b${col}\\b`, "g"),
+                  value
+                );
+              });
+              calculatedValues[key] = eval(evaluableFormula);
+            } catch (error) {
+              calculatedValues[key] = 0;
+            }
+          }
+
+          const recordData = {
+            pos_order_id: order.instance_id,
+            store_name: order.store_name,
+            order_date: order.date,
+            ...calculatedValues,
+            order_status_pos: "Delivered",
+            updated_at: new Date(),
+          };
+
+          if (existingRecordsMap.has(order.instance_id)) {
+            // Add to bulk update
+            bulkUpdateRecords.push({
+              ...recordData,
+              id: existingRecordsMap.get(order.instance_id).id,
+            });
+          } else {
+            // Add to bulk create
+            bulkCreateRecords.push({
+              ...recordData,
+              id: `ZVS_${order.instance_id}`,
+              reconciled_status: "PENDING",
+              created_at: new Date(),
+            });
+          }
+        } catch (error) {
+          console.error(
+            `Error processing order ${order.instance_id}:`,
+            error.message
+          );
+        }
+      }
+
+      // Perform bulk operations for this batch
+      if (bulkCreateRecords.length > 0) {
+        console.log(`📍 [createPosSummaryRecords] Bulk creating ${bulkCreateRecords.length} records...`);
+        await db.zomato_vs_pos_summary.bulkCreate(bulkCreateRecords, {
+          ignoreDuplicates: true,
+          logging: (sql) => {
+            console.log(`📊 [SQL] createPosSummaryRecords - Bulk Create Query (batch ${offset}):`);
+            console.log("   ", sql);
+          },
+        });
+        totalCreated += bulkCreateRecords.length;
+        console.log(`📍 [createPosSummaryRecords] Created ${bulkCreateRecords.length} records in batch ${offset}`);
+      }
+
+      if (bulkUpdateRecords.length > 0) {
+        console.log(`📍 [createPosSummaryRecords] Bulk updating ${bulkUpdateRecords.length} records...`);
+        await Promise.all(
+          bulkUpdateRecords.map((record) =>
+            db.zomato_vs_pos_summary.update(record, { 
+              where: { id: record.id },
+              logging: (sql) => {
+                console.log(`📊 [SQL] createPosSummaryRecords - Update Query for id ${record.id}:`);
+                console.log("   ", sql);
+              },
+            })
+          )
+        );
+        totalUpdated += bulkUpdateRecords.length;
+        console.log(`📍 [createPosSummaryRecords] Updated ${bulkUpdateRecords.length} records in batch ${offset}`);
+      }
+
+      totalProcessed += posOrders.length;
+      offset += BATCH_SIZE;
+
+      // Log progress
+      console.log(`📍 [createPosSummaryRecords] POS Summary batch: ${offset}/${totalCount} orders (${Math.round((offset/totalCount)*100)}%)`);
     }
 
-    console.log(`Processed ${posOrders.length} orders`);
-    console.log(`Created ${bulkCreateRecords.length} new records`);
-    console.log(`Updated ${bulkUpdateRecords.length} existing records`);
+    console.log(`\n✅ [createPosSummaryRecords] Function completed successfully`);
+    console.log(`📍 [createPosSummaryRecords] Total processed: ${totalProcessed} orders`);
+    console.log(`📍 [createPosSummaryRecords] Total created: ${totalCreated} new records`);
+    console.log(`📍 [createPosSummaryRecords] Total updated: ${totalUpdated} existing records`);
   } catch (error) {
-    console.error("Error in createPosSummaryRecords:", error);
+    console.error("❌ [createPosSummaryRecords] Error occurred:", error);
+    console.error("   Error message:", error.message);
+    console.error("   Error stack:", error.stack);
   }
 };
 
@@ -356,369 +434,581 @@ const formulaForZomatoSummary = async () => {
 };
 
 const createZomatoSummaryRecords = async () => {
+  console.log("📍 [createZomatoSummaryRecords] Function started");
   try {
-    // Get Zomato order data with specific fields and store_code from zomato_mappings
-    const zomatoOrders = await db.zomato.findAll({
+    // Get total count first to process in batches
+    console.log("📍 [createZomatoSummaryRecords] Getting total count of Zomato orders (sale/addition)...");
+    const totalCount = await db.zomato.count({
       where: {
         action: { [Op.in]: ["sale", "addition"] },
       },
-      raw: true,
-      nest: true,
+      logging: (sql) => {
+        console.log("📊 [SQL] createZomatoSummaryRecords - Count Query:");
+        console.log("   ", sql);
+      },
     });
+    console.log(`📍 [createZomatoSummaryRecords] Total Zomato orders found: ${totalCount}`);
 
-    if (!zomatoOrders || zomatoOrders.length === 0) {
+    if (totalCount === 0) {
       console.log("No Zomato orders found");
       return;
     }
 
     // Get formulas for calculations
+    console.log("📍 [createZomatoSummaryRecords] Fetching Zomato summary formulas...");
     const formulas = await formulaForZomatoSummary();
+    console.log(`📍 [createZomatoSummaryRecords] Loaded ${Object.keys(formulas).length} formulas`);
 
     // Pre-compile regex for column extraction
     const columnRegex = /\b[a-zA-Z_][a-zA-Z0-9_]*\b/g;
 
     // Get all unique column names from formulas once
+    console.log("📍 [createZomatoSummaryRecords] Extracting unique columns from formulas...");
     const uniqueColumns = new Set();
     Object.values(formulas).forEach((formula) => {
       const matches = formula.match(columnRegex) || [];
       matches.forEach((col) => uniqueColumns.add(col));
     });
+    console.log(`📍 [createZomatoSummaryRecords] Found ${uniqueColumns.size} unique columns in formulas`);
 
-    // Prepare bulk operations
-    const bulkCreateRecords = [];
-    const bulkUpdateRecords = [];
+    // Process in batches to avoid memory issues
+    const BATCH_SIZE = 1000;
+    let offset = 0;
+    let totalProcessed = 0;
+    let totalCreated = 0;
+    let totalUpdated = 0;
 
-    // Get existing records in bulk where pos_order_id matches Zomato order_id
-    const existingRecords = await db.zomato_vs_pos_summary.findAll({
-      where: {
-        pos_order_id: {
-          [Op.in]: zomatoOrders.map((order) => order.order_id),
+    while (offset < totalCount) {
+      // Fetch batch of Zomato orders
+      console.log(`📍 [createZomatoSummaryRecords] Fetching batch: offset=${offset}, limit=${BATCH_SIZE}`);
+      const zomatoOrders = await db.zomato.findAll({
+        where: {
+          action: { [Op.in]: ["sale", "addition"] },
         },
-      },
-      raw: true,
-    });
-
-    // Create a map of existing records for faster lookup using pos_order_id
-    const existingRecordsMap = new Map(
-      existingRecords.map((record) => [record.pos_order_id, record])
-    );
-
-    for (const order of zomatoOrders) {
-      try {
-        // Create context object
-        const context = {};
-        for (const col of uniqueColumns) {
-          if (col === "0") continue;
-          else if (col === "slab_rate") {
-            context[col] = calculateSlabRate(order.net_amount) || 0;
-          } else {
-            context[col] = order[col] || 0;
-          }
-        }
-
-        // Calculate values using formulas
-        const calculatedValues = {};
-        for (const [key, formula] of Object.entries(formulas)) {
-          try {
-            let evaluableFormula = formula;
-            Object.entries(context).forEach(([col, value]) => {
-              evaluableFormula = evaluableFormula.replace(
-                new RegExp(`\\b${col}\\b`, "g"),
-                value
-              );
-            });
-            calculatedValues[key] = eval(evaluableFormula);
-          } catch (error) {
-            calculatedValues[key] = 0;
-          }
-        }
-
-        const recordData = {
-          zomato_order_id: order.order_id,
-          store_name: order.store_code,
-          order_date: order.order_date,
-          ...calculatedValues,
-          order_status_zomato: order.action,
-          updated_at: new Date(),
-        };
-
-        // Check if this Zomato order_id exists as pos_order_id in the summary table
-        if (existingRecordsMap.has(order.order_id)) {
-          // Update existing record
-          bulkUpdateRecords.push({
-            ...recordData,
-            id: existingRecordsMap.get(order.order_id).id,
-          });
-        } else {
-          // Create new record
-          bulkCreateRecords.push({
-            ...recordData,
-            id: `ZVS_${order.order_id}`,
-            reconciled_status: "PENDING",
-            created_at: new Date(),
-          });
-        }
-      } catch (error) {
-        console.error(
-          `Error processing order ${order.order_id}:`,
-          error.message
-        );
-      }
-    }
-
-    // Perform bulk operations
-    if (bulkCreateRecords.length > 0) {
-      await db.zomato_vs_pos_summary.bulkCreate(bulkCreateRecords, {
-        ignoreDuplicates: true,
+        raw: true,
+        nest: true,
+        limit: BATCH_SIZE,
+        offset: offset,
+        order: [["order_id", "ASC"]],
+        logging: (sql) => {
+          console.log(`📊 [SQL] createZomatoSummaryRecords - Batch Query (offset ${offset}):`);
+          console.log("   ", sql);
+        },
       });
-    }
+      console.log(`📍 [createZomatoSummaryRecords] Fetched ${zomatoOrders.length} orders in this batch`);
 
-    if (bulkUpdateRecords.length > 0) {
-      await Promise.all(
-        bulkUpdateRecords.map((record) =>
-          db.zomato_vs_pos_summary.update(record, { where: { id: record.id } })
-        )
+      if (!zomatoOrders || zomatoOrders.length === 0) {
+        break;
+      }
+
+      // Prepare bulk operations for this batch
+      const bulkCreateRecords = [];
+      const bulkUpdateRecords = [];
+
+      // Get existing records for this batch only
+      const orderIds = zomatoOrders.map((order) => order.order_id);
+      console.log(`📍 [createZomatoSummaryRecords] Checking ${orderIds.length} existing records in summary table...`);
+      const existingRecords = await db.zomato_vs_pos_summary.findAll({
+        where: {
+          pos_order_id: {
+            [Op.in]: orderIds,
+          },
+        },
+        raw: true,
+        logging: (sql) => {
+          console.log(`📊 [SQL] createZomatoSummaryRecords - Check Existing Records Query (batch ${offset}):`);
+          console.log("   ", sql);
+        },
+      });
+      console.log(`📍 [createZomatoSummaryRecords] Found ${existingRecords.length} existing records to update`);
+
+      // Create a map of existing records for faster lookup using pos_order_id
+      const existingRecordsMap = new Map(
+        existingRecords.map((record) => [record.pos_order_id, record])
       );
+
+      console.log(`📍 [createZomatoSummaryRecords] Processing ${zomatoOrders.length} orders in batch ${offset}...`);
+      let processedInBatch = 0;
+      for (const order of zomatoOrders) {
+        try {
+          processedInBatch++;
+          if (processedInBatch % 100 === 0) {
+            console.log(`📍 [createZomatoSummaryRecords] Processing order ${processedInBatch}/${zomatoOrders.length} in batch ${offset}`);
+          }
+          // Create context object
+          const context = {};
+          for (const col of uniqueColumns) {
+            if (col === "0") continue;
+            else if (col === "slab_rate") {
+              context[col] = calculateSlabRate(order.net_amount) || 0;
+            } else {
+              context[col] = order[col] || 0;
+            }
+          }
+
+          // Calculate values using formulas
+          const calculatedValues = {};
+          for (const [key, formula] of Object.entries(formulas)) {
+            try {
+              let evaluableFormula = formula;
+              Object.entries(context).forEach(([col, value]) => {
+                evaluableFormula = evaluableFormula.replace(
+                  new RegExp(`\\b${col}\\b`, "g"),
+                  value
+                );
+              });
+              calculatedValues[key] = eval(evaluableFormula);
+            } catch (error) {
+              calculatedValues[key] = 0;
+            }
+          }
+
+          const recordData = {
+            zomato_order_id: order.order_id,
+            store_name: order.store_code,
+            order_date: order.order_date,
+            ...calculatedValues,
+            order_status_zomato: order.action,
+            updated_at: new Date(),
+          };
+
+          // Check if this Zomato order_id exists as pos_order_id in the summary table
+          if (existingRecordsMap.has(order.order_id)) {
+            // Update existing record
+            bulkUpdateRecords.push({
+              ...recordData,
+              id: existingRecordsMap.get(order.order_id).id,
+            });
+          } else {
+            // Create new record
+            bulkCreateRecords.push({
+              ...recordData,
+              id: `ZVS_${order.order_id}`,
+              reconciled_status: "PENDING",
+              created_at: new Date(),
+            });
+          }
+        } catch (error) {
+          console.error(
+            `Error processing order ${order.order_id}:`,
+            error.message
+          );
+        }
+      }
+
+      // Perform bulk operations for this batch
+      if (bulkCreateRecords.length > 0) {
+        console.log(`📍 [createZomatoSummaryRecords] Bulk creating ${bulkCreateRecords.length} records...`);
+        await db.zomato_vs_pos_summary.bulkCreate(bulkCreateRecords, {
+          ignoreDuplicates: true,
+          logging: (sql) => {
+            console.log(`📊 [SQL] createZomatoSummaryRecords - Bulk Create Query (batch ${offset}):`);
+            console.log("   ", sql);
+          },
+        });
+        totalCreated += bulkCreateRecords.length;
+        console.log(`📍 [createZomatoSummaryRecords] Created ${bulkCreateRecords.length} records in batch ${offset}`);
+      }
+
+      if (bulkUpdateRecords.length > 0) {
+        console.log(`📍 [createZomatoSummaryRecords] Bulk updating ${bulkUpdateRecords.length} records...`);
+        await Promise.all(
+          bulkUpdateRecords.map((record) =>
+            db.zomato_vs_pos_summary.update(record, { 
+              where: { id: record.id },
+              logging: (sql) => {
+                console.log(`📊 [SQL] createZomatoSummaryRecords - Update Query for id ${record.id}:`);
+                console.log("   ", sql);
+              },
+            })
+          )
+        );
+        totalUpdated += bulkUpdateRecords.length;
+        console.log(`📍 [createZomatoSummaryRecords] Updated ${bulkUpdateRecords.length} records in batch ${offset}`);
+      }
+
+      totalProcessed += zomatoOrders.length;
+      offset += BATCH_SIZE;
+
+      // Log progress
+      console.log(`📍 [createZomatoSummaryRecords] Zomato Summary batch: ${offset}/${totalCount} orders (${Math.round((offset/totalCount)*100)}%)`);
     }
 
-    console.log(`Processed ${zomatoOrders.length} Zomato orders`);
-    console.log(`Created ${bulkCreateRecords.length} new records`);
-    console.log(`Updated ${bulkUpdateRecords.length} existing records`);
+    console.log(`\n✅ [createZomatoSummaryRecords] Function completed successfully`);
+    console.log(`📍 [createZomatoSummaryRecords] Total processed: ${totalProcessed} Zomato orders`);
+    console.log(`📍 [createZomatoSummaryRecords] Total created: ${totalCreated} new records`);
+    console.log(`📍 [createZomatoSummaryRecords] Total updated: ${totalUpdated} existing records`);
   } catch (error) {
-    console.error("Error in createZomatoSummaryRecords:", error);
+    console.error("❌ [createZomatoSummaryRecords] Error occurred:", error);
+    console.error("   Error message:", error.message);
+    console.error("   Error stack:", error.stack);
   }
 };
 
 const createZomatoSummaryRecordsForRefundOnly = async () => {
+  console.log("📍 [createZomatoSummaryRecordsForRefundOnly] Function started");
   try {
-    // Get Zomato order data with specific fields and store_code from zomato_mappings
-    const zomatoOrders = await db.zomato.findAll({
+    // Get total count first to process in batches
+    console.log("📍 [createZomatoSummaryRecordsForRefundOnly] Getting total count of Zomato refund orders...");
+    const totalCount = await db.zomato.count({
       where: {
         action: "refund",
       },
-      raw: true,
-      nest: true,
+      logging: (sql) => {
+        console.log("📊 [SQL] createZomatoSummaryRecordsForRefundOnly - Count Query:");
+        console.log("   ", sql);
+      },
     });
+    console.log(`📍 [createZomatoSummaryRecordsForRefundOnly] Total refund orders found: ${totalCount}`);
 
-    if (!zomatoOrders || zomatoOrders.length === 0) {
-      console.log("No Zomato orders found");
+    if (totalCount === 0) {
+      console.log("No Zomato refund orders found");
       return;
     }
 
     // Get formulas for calculations
+    console.log("📍 [createZomatoSummaryRecords] Fetching Zomato summary formulas...");
     const formulas = await formulaForZomatoSummary();
+    console.log(`📍 [createZomatoSummaryRecords] Loaded ${Object.keys(formulas).length} formulas`);
 
     // Pre-compile regex for column extraction
     const columnRegex = /\b[a-zA-Z_][a-zA-Z0-9_]*\b/g;
 
     // Get all unique column names from formulas once
+    console.log("📍 [createZomatoSummaryRecords] Extracting unique columns from formulas...");
     const uniqueColumns = new Set();
     Object.values(formulas).forEach((formula) => {
       const matches = formula.match(columnRegex) || [];
       matches.forEach((col) => uniqueColumns.add(col));
     });
+    console.log(`📍 [createZomatoSummaryRecords] Found ${uniqueColumns.size} unique columns in formulas`);
 
-    // Prepare bulk operations
-    const bulkCreateRecords = [];
-    const bulkUpdateRecords = [];
+    // Process in batches to avoid memory issues
+    const BATCH_SIZE = 1000;
+    let offset = 0;
+    let totalProcessed = 0;
+    let totalCreated = 0;
+    let totalUpdated = 0;
 
-    // Get existing records in bulk where pos_order_id matches Zomato order_id
-    const existingRecords = await db.zomato_vs_pos_summary.findAll({
-      where: {
-        [Op.and]: [
-          {
-            zomato_order_id: {
-              [Op.in]: zomatoOrders.map((order) => order.order_id),
-            },
-          },
-          { order_status_zomato: "refund" },
-        ],
-      },
-      raw: true,
-    });
-
-    // Create a map of existing records for faster lookup using pos_order_id
-    const existingRecordsMap = new Map(
-      existingRecords.map((record) => [record.zomato_order_id, record])
-    );
-
-    for (const order of zomatoOrders) {
-      try {
-        // Create context object
-        const context = {};
-        for (const col of uniqueColumns) {
-          if (col === "0") continue;
-          else if (col === "slab_rate") {
-            context[col] = calculateSlabRate(order.net_amount) || 0;
-          } else {
-            context[col] = order[col] || 0;
-          }
-        }
-
-        // Calculate values using formulas
-        const calculatedValues = {};
-        for (const [key, formula] of Object.entries(formulas)) {
-          try {
-            let evaluableFormula = formula;
-            Object.entries(context).forEach(([col, value]) => {
-              evaluableFormula = evaluableFormula.replace(
-                new RegExp(`\\b${col}\\b`, "g"),
-                value
-              );
-            });
-            calculatedValues[key] = eval(evaluableFormula);
-          } catch (error) {
-            calculatedValues[key] = 0;
-          }
-        }
-
-        const recordData = {
-          zomato_order_id: order.order_id,
-          store_name: order.store_code,
-          order_date: order.order_date,
-          ...calculatedValues,
-          order_status_zomato: order.action,
-          updated_at: new Date(),
-        };
-
-        // Check if this Zomato order_id exists as pos_order_id in the summary table
-        if (existingRecordsMap.has(order.order_id)) {
-          // Update existing record
-          bulkUpdateRecords.push({
-            ...recordData,
-            id: existingRecordsMap.get(order.order_id).id,
-          });
-        } else {
-          // Create new record
-          bulkCreateRecords.push({
-            ...recordData,
-            id: `ZVS_refund_${order.order_id}`,
-            reconciled_status: "PENDING",
-            created_at: new Date(),
-          });
-        }
-      } catch (error) {
-        console.error(
-          `Error processing order ${order.order_id}:`,
-          error.message
-        );
-      }
-    }
-
-    // Perform bulk operations
-    if (bulkCreateRecords.length > 0) {
-      await db.zomato_vs_pos_summary.bulkCreate(bulkCreateRecords, {
-        ignoreDuplicates: true,
+    while (offset < totalCount) {
+      // Fetch batch of Zomato refund orders
+      console.log(`📍 [createZomatoSummaryRecordsForRefundOnly] Fetching batch: offset=${offset}, limit=${BATCH_SIZE}`);
+      const zomatoOrders = await db.zomato.findAll({
+        where: {
+          action: "refund",
+        },
+        raw: true,
+        nest: true,
+        limit: BATCH_SIZE,
+        offset: offset,
+        order: [["order_id", "ASC"]],
+        logging: (sql) => {
+          console.log(`📊 [SQL] createZomatoSummaryRecordsForRefundOnly - Batch Query (offset ${offset}):`);
+          console.log("   ", sql);
+        },
       });
-    }
+      console.log(`📍 [createZomatoSummaryRecordsForRefundOnly] Fetched ${zomatoOrders.length} refund orders in this batch`);
 
-    if (bulkUpdateRecords.length > 0) {
-      await Promise.all(
-        bulkUpdateRecords.map((record) =>
-          db.zomato_vs_pos_summary.update(record, { where: { id: record.id } })
-        )
+      if (!zomatoOrders || zomatoOrders.length === 0) {
+        break;
+      }
+
+      // Prepare bulk operations for this batch
+      const bulkCreateRecords = [];
+      const bulkUpdateRecords = [];
+
+      // Get existing records for this batch only
+      const orderIds = zomatoOrders.map((order) => order.order_id);
+      console.log(`📍 [createZomatoSummaryRecordsForRefundOnly] Checking ${orderIds.length} existing refund records...`);
+      const existingRecords = await db.zomato_vs_pos_summary.findAll({
+        where: {
+          [Op.and]: [
+            {
+              zomato_order_id: {
+                [Op.in]: orderIds,
+              },
+            },
+            { order_status_zomato: "refund" },
+          ],
+        },
+        raw: true,
+        logging: (sql) => {
+          console.log(`📊 [SQL] createZomatoSummaryRecordsForRefundOnly - Check Existing Records Query (batch ${offset}):`);
+          console.log("   ", sql);
+        },
+      });
+      console.log(`📍 [createZomatoSummaryRecordsForRefundOnly] Found ${existingRecords.length} existing refund records to update`);
+
+      // Create a map of existing records for faster lookup using zomato_order_id
+      const existingRecordsMap = new Map(
+        existingRecords.map((record) => [record.zomato_order_id, record])
       );
+
+      console.log(`📍 [createZomatoSummaryRecordsForRefundOnly] Processing ${zomatoOrders.length} refund orders in batch ${offset}...`);
+      let processedInBatch = 0;
+      for (const order of zomatoOrders) {
+        try {
+          processedInBatch++;
+          if (processedInBatch % 100 === 0) {
+            console.log(`📍 [createZomatoSummaryRecordsForRefundOnly] Processing refund order ${processedInBatch}/${zomatoOrders.length} in batch ${offset}`);
+          }
+          // Create context object
+          const context = {};
+          for (const col of uniqueColumns) {
+            if (col === "0") continue;
+            else if (col === "slab_rate") {
+              context[col] = calculateSlabRate(order.net_amount) || 0;
+            } else {
+              context[col] = order[col] || 0;
+            }
+          }
+
+          // Calculate values using formulas
+          const calculatedValues = {};
+          for (const [key, formula] of Object.entries(formulas)) {
+            try {
+              let evaluableFormula = formula;
+              Object.entries(context).forEach(([col, value]) => {
+                evaluableFormula = evaluableFormula.replace(
+                  new RegExp(`\\b${col}\\b`, "g"),
+                  value
+                );
+              });
+              calculatedValues[key] = eval(evaluableFormula);
+            } catch (error) {
+              calculatedValues[key] = 0;
+            }
+          }
+
+          const recordData = {
+            zomato_order_id: order.order_id,
+            store_name: order.store_code,
+            order_date: order.order_date,
+            ...calculatedValues,
+            order_status_zomato: order.action,
+            updated_at: new Date(),
+          };
+
+          // Check if this Zomato order_id exists in the summary table
+          if (existingRecordsMap.has(order.order_id)) {
+            // Update existing record
+            bulkUpdateRecords.push({
+              ...recordData,
+              id: existingRecordsMap.get(order.order_id).id,
+            });
+          } else {
+            // Create new record
+            bulkCreateRecords.push({
+              ...recordData,
+              id: `ZVS_refund_${order.order_id}`,
+              reconciled_status: "PENDING",
+              created_at: new Date(),
+            });
+          }
+        } catch (error) {
+          console.error(
+            `Error processing refund order ${order.order_id}:`,
+            error.message
+          );
+        }
+      }
+
+      // Perform bulk operations for this batch
+      if (bulkCreateRecords.length > 0) {
+        console.log(`📍 [createZomatoSummaryRecordsForRefundOnly] Bulk creating ${bulkCreateRecords.length} refund records...`);
+        await db.zomato_vs_pos_summary.bulkCreate(bulkCreateRecords, {
+          ignoreDuplicates: true,
+          logging: (sql) => {
+            console.log(`📊 [SQL] createZomatoSummaryRecordsForRefundOnly - Bulk Create Query (batch ${offset}):`);
+            console.log("   ", sql);
+          },
+        });
+        totalCreated += bulkCreateRecords.length;
+        console.log(`📍 [createZomatoSummaryRecordsForRefundOnly] Created ${bulkCreateRecords.length} refund records in batch ${offset}`);
+      }
+
+      if (bulkUpdateRecords.length > 0) {
+        console.log(`📍 [createZomatoSummaryRecordsForRefundOnly] Bulk updating ${bulkUpdateRecords.length} refund records...`);
+        await Promise.all(
+          bulkUpdateRecords.map((record) =>
+            db.zomato_vs_pos_summary.update(record, { 
+              where: { id: record.id },
+              logging: (sql) => {
+                console.log(`📊 [SQL] createZomatoSummaryRecordsForRefundOnly - Update Query for id ${record.id}:`);
+                console.log("   ", sql);
+              },
+            })
+          )
+        );
+        totalUpdated += bulkUpdateRecords.length;
+        console.log(`📍 [createZomatoSummaryRecordsForRefundOnly] Updated ${bulkUpdateRecords.length} refund records in batch ${offset}`);
+      }
+
+      totalProcessed += zomatoOrders.length;
+      offset += BATCH_SIZE;
+
+      // Log progress
+      console.log(`📍 [createZomatoSummaryRecordsForRefundOnly] Zomato Refund Summary batch: ${offset}/${totalCount} orders (${Math.round((offset/totalCount)*100)}%)`);
     }
 
-    console.log(`Processed ${zomatoOrders.length} Zomato orders`);
-    console.log(`Created ${bulkCreateRecords.length} new records`);
-    console.log(`Updated ${bulkUpdateRecords.length} existing records`);
+    console.log(`\n✅ [createZomatoSummaryRecordsForRefundOnly] Function completed successfully`);
+    console.log(`📍 [createZomatoSummaryRecordsForRefundOnly] Total processed: ${totalProcessed} refund orders`);
+    console.log(`📍 [createZomatoSummaryRecordsForRefundOnly] Total created: ${totalCreated} new records`);
+    console.log(`📍 [createZomatoSummaryRecordsForRefundOnly] Total updated: ${totalUpdated} existing records`);
   } catch (error) {
-    console.error("Error in createZomatoSummaryRecords:", error);
+    console.error("❌ [createZomatoSummaryRecordsForRefundOnly] Error occurred:", error);
+    console.error("   Error message:", error.message);
+    console.error("   Error stack:", error.stack);
   }
 };
 
 // Function to calculate delta values between POS and Zomato columns
 const calculateDeltaValues = async () => {
+  console.log("📍 [calculateDeltaValues] Function started");
   try {
-    // Get all records from zomato_vs_pos_summary with raw data for better performance
-    const summaryRecords = await db.zomato_vs_pos_summary.findAll({
-      raw: true,
+    // Get total count first
+    console.log("📍 [calculateDeltaValues] Getting total count of summary records...");
+    const totalCount = await db.zomato_vs_pos_summary.count({
+      logging: (sql) => {
+        console.log("📊 [SQL] calculateDeltaValues - Count Query:");
+        console.log("   ", sql);
+      },
     });
+    console.log(`📍 [calculateDeltaValues] Total summary records found: ${totalCount}`);
 
-    if (!summaryRecords || summaryRecords.length === 0) {
+    if (totalCount === 0) {
       console.log("No records found for delta calculation");
       return;
     }
 
-    const results = [];
+    // Process records in batches to avoid memory issues
+    const BATCH_SIZE = 1000;
+    let totalProcessed = 0;
+    let totalUpdated = 0;
     const errors = [];
-    const bulkUpdates = [];
+    let offset = 0;
 
-    for (const record of summaryRecords) {
-      try {
-        const updatedValues = {};
+    // Process in batches
+    while (offset < totalCount) {
+      // Fetch batch of records
+      const summaryRecords = await db.zomato_vs_pos_summary.findAll({
+        raw: true,
+        limit: BATCH_SIZE,
+        offset: offset,
+        order: [["id", "ASC"]], // Consistent ordering
+      });
 
-        // Get all column names from the record
-        const columns = Object.keys(record);
-
-        // Filter columns that start with pos_ or zomato_ (excluding order_id fields)
-        const posColumns = columns.filter(
-          (col) =>
-            col.startsWith("pos_") &&
-            col !== "pos_order_id" &&
-            col !== "order_status_pos"
-        );
-
-        // For each POS column, calculate deltas
-        for (const posCol of posColumns) {
-          // Get the corresponding Zomato column name
-          const zomatoCol = posCol.replace("pos_", "zomato_");
-
-          // Calculate deltas
-          const posVsZomatoDelta = record[posCol] - (record[zomatoCol] || 0);
-          const zomatoVsPosDelta = (record[zomatoCol] || 0) - record[posCol];
-
-          // Get the base column name (without pos_ or zomato_ prefix)
-          const baseColName = posCol.replace("pos_", "");
-
-          // Add delta values to update object with correct naming format
-          updatedValues[`pos_vs_zomato_${baseColName}_delta`] =
-            posVsZomatoDelta;
-          updatedValues[`zomato_vs_pos_${baseColName}_delta`] =
-            zomatoVsPosDelta;
-        }
-
-        // Add to bulk updates array
-        bulkUpdates.push({
-          id: record.id,
-          ...updatedValues,
-          updated_at: new Date(),
-        });
-
-        results.push(record.pos_order_id);
-      } catch (error) {
-        errors.push({
-          record_id: record.pos_order_id,
-          error: error.message,
-        });
+      if (!summaryRecords || summaryRecords.length === 0) {
+        break;
       }
+
+      const bulkUpdates = [];
+      console.log(`📍 [calculateDeltaValues] Processing ${summaryRecords.length} records in batch ${offset}...`);
+      let processedInBatch = 0;
+
+      for (const record of summaryRecords) {
+        try {
+          processedInBatch++;
+          if (processedInBatch % 100 === 0) {
+            console.log(`📍 [calculateDeltaValues] Processing record ${processedInBatch}/${summaryRecords.length} in batch ${offset}`);
+          }
+          const updatedValues = {};
+
+          // Get all column names from the record
+          const columns = Object.keys(record);
+
+          // Filter columns that start with pos_ or zomato_ (excluding order_id fields)
+          const posColumns = columns.filter(
+            (col) =>
+              col.startsWith("pos_") &&
+              col !== "pos_order_id" &&
+              col !== "order_status_pos"
+          );
+
+          // For each POS column, calculate deltas
+          for (const posCol of posColumns) {
+            // Get the corresponding Zomato column name
+            const zomatoCol = posCol.replace("pos_", "zomato_");
+
+            // Calculate deltas
+            const posVsZomatoDelta = record[posCol] - (record[zomatoCol] || 0);
+            const zomatoVsPosDelta = (record[zomatoCol] || 0) - record[posCol];
+
+            // Get the base column name (without pos_ or zomato_ prefix)
+            const baseColName = posCol.replace("pos_", "");
+
+            // Add delta values to update object with correct naming format
+            updatedValues[`pos_vs_zomato_${baseColName}_delta`] =
+              posVsZomatoDelta;
+            updatedValues[`zomato_vs_pos_${baseColName}_delta`] =
+              zomatoVsPosDelta;
+          }
+
+          // Add to bulk updates array
+          bulkUpdates.push({
+            id: record.id,
+            ...updatedValues,
+            updated_at: new Date(),
+          });
+
+          totalProcessed++;
+        } catch (error) {
+          errors.push({
+            record_id: record.pos_order_id,
+            error: error.message,
+          });
+        }
+      }
+
+      // Perform bulk update for this batch
+      if (bulkUpdates.length > 0) {
+        console.log(`📍 [calculateDeltaValues] Updating ${bulkUpdates.length} records with delta values...`);
+        await Promise.all(
+          bulkUpdates.map((update) =>
+            db.zomato_vs_pos_summary.update(update, { 
+              where: { id: update.id },
+              logging: (sql) => {
+                console.log(`📊 [SQL] calculateDeltaValues - Update Query for id ${update.id}:`);
+                console.log("   ", sql);
+              },
+            })
+          )
+        );
+        totalUpdated += bulkUpdates.length;
+        console.log(`📍 [calculateDeltaValues] Updated ${bulkUpdates.length} records in batch ${offset}`);
+      }
+
+      // Clear arrays for next batch to free memory
+      offset += BATCH_SIZE;
+      
+      // Log progress
+      console.log(`📍 [calculateDeltaValues] Delta calculation batch: ${offset}/${totalCount} records (${Math.round((offset/totalCount)*100)}%)`);
     }
 
-    // Perform bulk update if there are records to update
-    if (bulkUpdates.length > 0) {
-      await Promise.all(
-        bulkUpdates.map((update) =>
-          db.zomato_vs_pos_summary.update(update, { where: { id: update.id } })
-        )
-      );
-    }
-
-    console.log(`Processed ${summaryRecords.length} records`);
-    console.log(`Successfully updated ${results.length} records`);
+    console.log(`\n✅ [calculateDeltaValues] Function completed successfully`);
+    console.log(`📍 [calculateDeltaValues] Total processed: ${totalProcessed} records for delta calculation`);
+    console.log(`📍 [calculateDeltaValues] Successfully updated: ${totalUpdated} records`);
     if (errors.length > 0) {
-      console.error(`Failed to update ${errors.length} records:`, errors);
+      console.error(`⚠️ [calculateDeltaValues] Failed to update ${errors.length} records:`, errors);
     }
   } catch (error) {
-    console.error("Error in calculateDeltaValues:", error);
+    console.error("❌ [calculateDeltaValues] Error occurred:", error);
+    console.error("   Error message:", error.message);
+    console.error("   Error stack:", error.stack);
   }
 };
 
 // Function to calculate Zomato receivables vs receipts
 const calculateZomatoReceivablesVsReceipts = async () => {
+  console.log("📍 [calculateZomatoReceivablesVsReceipts] Function started");
   try {
     // Get all Zomato records with UTR numbers and join with zomato_vs_pos_summary
+    console.log("📍 [calculateZomatoReceivablesVsReceipts] Fetching Zomato records with UTR numbers...");
     const zomatoRecords = await db.zomato.findAll({
+      logging: (sql) => {
+        console.log("📊 [SQL] calculateZomatoReceivablesVsReceipts - Aggregate Query:");
+        console.log("   ", sql);
+      },
       // where: {
       //   utr_number: {
       //     [Op.not]: null,
@@ -751,8 +1041,10 @@ const calculateZomatoReceivablesVsReceipts = async () => {
       nest: true,
     });
 
+    console.log(`📍 [calculateZomatoReceivablesVsReceipts] Found ${zomatoRecords.length} Zomato records with UTR numbers`);
+    
     if (!zomatoRecords || zomatoRecords.length === 0) {
-      console.log("No Zomato records found with UTR numbers");
+      console.log("📍 [calculateZomatoReceivablesVsReceipts] No Zomato records found with UTR numbers");
       return;
     }
 
@@ -760,17 +1052,25 @@ const calculateZomatoReceivablesVsReceipts = async () => {
 
     // Fetch all relevant UTRs from Zomato records
     const utrNumbers = zomatoRecords.map((r) => r.utr_number).filter(Boolean);
+    console.log(`📍 [calculateZomatoReceivablesVsReceipts] Fetching bank statements for ${utrNumbers.length} UTR numbers...`);
 
     // Fetch all matching bank statements in one query
     const bankStatements = await db.bank_statement.findAll({
       where: {
         utr: utrNumbers.length > 0 ? utrNumbers : null,
       },
+      logging: (sql) => {
+        console.log("📊 [SQL] calculateZomatoReceivablesVsReceipts - Bank Statement Query:");
+        console.log("   ", sql);
+      },
     });
+    console.log(`📍 [calculateZomatoReceivablesVsReceipts] Found ${bankStatements.length} matching bank statements`);
+    console.log("📍 [calculateZomatoReceivablesVsReceipts] Creating bank statement map...");
     const bankStatementMap = {};
     bankStatements.forEach((bs) => {
       if (bs.utr) bankStatementMap[bs.utr] = bs;
     });
+    console.log(`📍 [calculateZomatoReceivablesVsReceipts] Created map with ${Object.keys(bankStatementMap).length} UTR entries`);
 
     for (const record of zomatoRecords) {
       try {
@@ -829,6 +1129,7 @@ const calculateZomatoReceivablesVsReceipts = async () => {
 
     // Perform bulk create with upsert
     if (bulkCreateRecords.length > 0) {
+      console.log(`📍 [calculateZomatoReceivablesVsReceipts] Bulk creating/updating ${bulkCreateRecords.length} receivables records...`);
       await db.zomato_receivables_vs_receipts.bulkCreate(bulkCreateRecords, {
         updateOnDuplicate: [
           "total_orders",
@@ -840,39 +1141,80 @@ const calculateZomatoReceivablesVsReceipts = async () => {
           "account_no",
           "updated_at",
         ],
+        logging: (sql) => {
+          console.log("📊 [SQL] calculateZomatoReceivablesVsReceipts - Bulk Create/Update Query:");
+          console.log("   ", sql);
+        },
       });
+      console.log(`📍 [calculateZomatoReceivablesVsReceipts] Created/Updated ${bulkCreateRecords.length} receivables records`);
     }
 
-    console.log(`Processed ${bulkCreateRecords.length} records`);
+    console.log(`📍 [calculateZomatoReceivablesVsReceipts] Processed ${bulkCreateRecords.length} receivables records`);
+    console.log("✅ [calculateZomatoReceivablesVsReceipts] Function completed successfully");
   } catch (error) {
-    console.error("Error in calculateZomatoReceivablesVsReceipts:", error);
+    console.error("❌ [calculateZomatoReceivablesVsReceipts] Error occurred:", error);
+    console.error("   Error message:", error.message);
+    console.error("   Error stack:", error.stack);
   }
 };
 
 // Function to check and update reconciliation status
-const checkReconciliationStatus = async () => {
+const checkReconciliationStatus = async (req, res) => {
+  console.log("===========================================");
+  console.log("🚀 I AM HERE - Entry point of /api/node/reconciliation/populate-threepo-dashboard");
+  console.log("===========================================");
+  console.log(`📅 Timestamp: ${new Date().toISOString()}`);
+  
   try {
+    console.log("\n🔵 STEP 1: Starting createPosSummaryRecords()");
+    console.log("─────────────────────────────────────────");
     await createPosSummaryRecords();
+    console.log("✅ STEP 1 COMPLETE: createPosSummaryRecords() finished\n");
+
+    console.log("🔵 STEP 2: Starting createZomatoSummaryRecords()");
+    console.log("─────────────────────────────────────────");
     await createZomatoSummaryRecords();
+    console.log("✅ STEP 2 COMPLETE: createZomatoSummaryRecords() finished\n");
+
+    console.log("🔵 STEP 3: Starting createZomatoSummaryRecordsForRefundOnly()");
+    console.log("─────────────────────────────────────────");
     await createZomatoSummaryRecordsForRefundOnly();
+    console.log("✅ STEP 3 COMPLETE: createZomatoSummaryRecordsForRefundOnly() finished\n");
+
+    console.log("🔵 STEP 4: Starting calculateDeltaValues()");
+    console.log("─────────────────────────────────────────");
     await calculateDeltaValues();
+    console.log("✅ STEP 4 COMPLETE: calculateDeltaValues() finished\n");
+
+    console.log("🔵 STEP 5: Starting calculateZomatoReceivablesVsReceipts()");
+    console.log("─────────────────────────────────────────");
     await calculateZomatoReceivablesVsReceipts();
+    console.log("✅ STEP 5 COMPLETE: calculateZomatoReceivablesVsReceipts() finished\n");
 
-    // Get all records from zomato_vs_pos_summary with raw data for better performance
-    const summaryRecords = await db.zomato_vs_pos_summary.findAll({
-      raw: true,
+    // Get total count first
+    console.log("📍 [checkReconciliationStatus] Getting total count of summary records for reconciliation...");
+    const totalCount = await db.zomato_vs_pos_summary.count({
+      logging: (sql) => {
+        console.log("📊 [SQL] checkReconciliationStatus - Count Query:");
+        console.log("   ", sql);
+      },
     });
+    console.log(`📍 [checkReconciliationStatus] Total summary records: ${totalCount}`);
 
-    if (!summaryRecords || summaryRecords.length === 0) {
+    if (totalCount === 0) {
+      console.log("⚠️ [checkReconciliationStatus] No summary records found - returning 404");
       return res.status(404).json({
         success: false,
         message: "No summary records found",
       });
     }
 
-    const results = [];
+    // Process records in batches to avoid memory issues
+    const BATCH_SIZE = 1000;
+    let totalProcessed = 0;
+    let totalUpdated = 0;
     const errors = [];
-    const bulkUpdates = [];
+    let offset = 0;
 
     const BASE_COLUMN_TO_CHECK = [
       "pos_vs_zomato_net_amount_delta",
@@ -885,60 +1227,89 @@ const checkReconciliationStatus = async () => {
       "zomato_vs_pos_pg_charge_delta",
     ];
 
-    for (const record of summaryRecords) {
-      try {
-        let isReconciled = true;
-        let unreconciledReasonPosVsZomato = [];
-        let unreconciledReasonZomatoVsPos = [];
-        let billSubTotal = 0;
-        const columns = Object.keys(record);
-        // First check if order IDs are missing
-        if (!record.pos_order_id) {
-          isReconciled = false;
-          unreconciledReasonPosVsZomato = ["Order not found in pos"];
-          unreconciledReasonZomatoVsPos = ["Order not found in pos"]; // Using pos_sub_total as default
-          billSubTotal = record?.zomato_net_amount;
-        } else if (!record.zomato_order_id) {
-          isReconciled = false;
-          unreconciledReasonZomatoVsPos = ["Order not found in zomato"];
-          unreconciledReasonPosVsZomato = ["Order not found in zomato"]; // Using zomato_sub_total as default
-          billSubTotal = record?.pos_net_amount;
-        } else {
-          billSubTotal = record?.pos_net_amount;
-          // Get all column names from the record
-          // Filter columns that contain '_delta' in their name
-          const deltaColumns = columns.filter((col) => col.includes("_delta"));
-          // Check each delta column
+    // Process in batches to avoid memory exhaustion
+    while (offset < totalCount) {
+      // Fetch batch of records
+      console.log(`📍 [checkReconciliationStatus] Fetching batch: offset=${offset}, limit=${BATCH_SIZE}`);
+      const summaryRecords = await db.zomato_vs_pos_summary.findAll({
+        raw: true,
+        limit: BATCH_SIZE,
+        offset: offset,
+        order: [["id", "ASC"]], // Consistent ordering
+        logging: (sql) => {
+          console.log(`📊 [SQL] checkReconciliationStatus - Batch Query (offset ${offset}):`);
+          console.log("   ", sql);
+        },
+      });
+      console.log(`📍 [checkReconciliationStatus] Fetched ${summaryRecords.length} records in this batch`);
 
-          // Values where threshold need to add
-          let thresholdColumns50 = [
-            "pos_vs_zomato_net_amount_delta",
-            "zomato_vs_pos_net_amount_delta",
-            "pos_vs_zomato_commission_value_delta",
-            "zomato_vs_pos_commission_value_delta",
-            "pos_vs_zomato_pg_applied_on_delta",
-            "zomato_vs_pos_pg_applied_on_delta",
-            "pos_vs_zomato_final_amount_delta",
-            "zomato_vs_pos_final_amount_delta",
-          ];
+      if (!summaryRecords || summaryRecords.length === 0) {
+        break;
+      }
 
-          let thresholdColumns10 = [
-            "pos_vs_zomato_tax_paid_by_customer_delta",
-            "zomato_vs_pos_tax_paid_by_customer_delta",
-            "pos_vs_zomato_taxes_zomato_fee_delta",
-            "zomato_vs_pos_taxes_zomato_fee_delta",
-            "pos_vs_zomato_tds_amount_delta",
-            "zomato_vs_pos_tds_amount_delta",
-            "pos_vs_zomato_pg_charge_delta",
-            "zomato_vs_pos_pg_charge_delta",
-          ];
+      const bulkUpdates = [];
+      console.log(`📍 [checkReconciliationStatus] Starting reconciliation checks for batch ${offset}...`);
+      console.log(`📍 [checkReconciliationStatus] Processing ${summaryRecords.length} records in batch ${offset}...`);
+      let processedInBatch = 0;
 
-          for (const deltaCol of deltaColumns) {
-            if (
-              !thresholdColumns50?.includes(deltaCol) &&
-              !thresholdColumns10?.includes(deltaCol)
-            ) {
-              if (Math.abs(parseFloat(record[deltaCol])) !== 0) {
+      for (const record of summaryRecords) {
+        try {
+          processedInBatch++;
+          if (processedInBatch % 100 === 0) {
+            console.log(`📍 [checkReconciliationStatus] Processing record ${processedInBatch}/${summaryRecords.length} in batch ${offset}`);
+          }
+          let isReconciled = true;
+          let unreconciledReasonPosVsZomato = [];
+          let unreconciledReasonZomatoVsPos = [];
+          let billSubTotal = 0;
+          const columns = Object.keys(record);
+          // First check if order IDs are missing
+          if (!record.pos_order_id) {
+            isReconciled = false;
+            unreconciledReasonPosVsZomato = ["Order not found in pos"];
+            unreconciledReasonZomatoVsPos = ["Order not found in pos"]; // Using pos_sub_total as default
+            billSubTotal = record?.zomato_net_amount;
+          } else if (!record.zomato_order_id) {
+            isReconciled = false;
+            unreconciledReasonZomatoVsPos = ["Order not found in zomato"];
+            unreconciledReasonPosVsZomato = ["Order not found in zomato"]; // Using zomato_sub_total as default
+            billSubTotal = record?.pos_net_amount;
+          } else {
+            billSubTotal = record?.pos_net_amount;
+            // Get all column names from the record
+            // Filter columns that contain '_delta' in their name
+            const deltaColumns = columns.filter((col) => col.includes("_delta"));
+            // Check each delta column
+
+            // Values where threshold need to add
+              let thresholdColumns50 = [
+              "pos_vs_zomato_net_amount_delta",
+              "zomato_vs_pos_net_amount_delta",
+              "pos_vs_zomato_commission_value_delta",
+              "zomato_vs_pos_commission_value_delta",
+              "pos_vs_zomato_pg_applied_on_delta",
+              "zomato_vs_pos_pg_applied_on_delta",
+              "pos_vs_zomato_final_amount_delta",
+              "zomato_vs_pos_final_amount_delta",
+            ];
+
+            let thresholdColumns10 = [
+              "pos_vs_zomato_tax_paid_by_customer_delta",
+              "zomato_vs_pos_tax_paid_by_customer_delta",
+              "pos_vs_zomato_taxes_zomato_fee_delta",
+              "zomato_vs_pos_taxes_zomato_fee_delta",
+              "pos_vs_zomato_tds_amount_delta",
+              "zomato_vs_pos_tds_amount_delta",
+              "pos_vs_zomato_pg_charge_delta",
+              "zomato_vs_pos_pg_charge_delta",
+            ];
+
+            for (const deltaCol of deltaColumns) {
+              if (
+                !thresholdColumns50?.includes(deltaCol) &&
+                !thresholdColumns10?.includes(deltaCol)
+              ) {
+                if (Math.abs(parseFloat(record[deltaCol])) !== 0) {
                 isReconciled = false;
                 if (BASE_COLUMN_TO_CHECK?.includes(deltaCol)) {
                   unreconciledReasonPosVsZomato?.push(
@@ -1045,67 +1416,111 @@ const checkReconciliationStatus = async () => {
           }
         }
 
-        // Check Self Mismatch
-        if (isReconciled) {
-          // Compare recipt vs calculated values of zomato_vs_pos_summary
-          const calculatedColumns = columns.filter((col) =>
-            col.includes("calculated_")
-          );
-          for (const calculatedCol of calculatedColumns) {
-            const originalCol = calculatedCol.replace(/^calculated_/, "");
-            if (record[calculatedCol] !== record[originalCol]) {
-              isReconciled = false;
-              billSubTotal = record?.zomato_sub_total;
-              unreconciledReasonZomatoVsPos = [
-                THREE_PO_VS_POS_REASONS[calculatedCol],
-              ];
-              break;
+          // Check Self Mismatch
+          if (isReconciled) {
+            // Compare recipt vs calculated values of zomato_vs_pos_summary
+            const calculatedColumns = columns.filter((col) =>
+              col.includes("calculated_")
+            );
+            for (const calculatedCol of calculatedColumns) {
+              const originalCol = calculatedCol.replace(/^calculated_/, "");
+              if (record[calculatedCol] !== record[originalCol]) {
+                isReconciled = false;
+                billSubTotal = record?.zomato_sub_total;
+                unreconciledReasonZomatoVsPos = [
+                  THREE_PO_VS_POS_REASONS[calculatedCol],
+                ];
+                break;
+              }
             }
           }
+
+          // Add to bulk updates array
+          bulkUpdates.push({
+            id: record.id,
+            reconciled_status: isReconciled ? "RECONCILED" : "UNRECONCILED",
+            reconciled_amount: isReconciled ? billSubTotal : 0,
+            unreconciled_amount: !isReconciled ? billSubTotal : 0,
+            pos_vs_zomato_reason:
+              isReconciled && unreconciledReasonPosVsZomato?.length > 0
+                ? ""
+                : unreconciledReasonPosVsZomato?.join(","),
+            zomato_vs_pos_reason:
+              isReconciled && unreconciledReasonPosVsZomato?.length > 0
+                ? ""
+                : unreconciledReasonZomatoVsPos?.join(","),
+            updated_at: new Date(),
+          });
+
+          totalProcessed++;
+        } catch (error) {
+          errors.push({
+            record_id: record.pos_order_id,
+            error: error.message,
+          });
         }
+    }
 
-        // Add to bulk updates array
-        bulkUpdates.push({
-          id: record.id,
-          reconciled_status: isReconciled ? "RECONCILED" : "UNRECONCILED",
-          reconciled_amount: isReconciled ? billSubTotal : 0,
-          unreconciled_amount: !isReconciled ? billSubTotal : 0,
-          pos_vs_zomato_reason:
-            isReconciled && unreconciledReasonPosVsZomato?.length > 0
-              ? ""
-              : unreconciledReasonPosVsZomato?.join(","),
-          zomato_vs_pos_reason:
-            isReconciled && unreconciledReasonPosVsZomato?.length > 0
-              ? ""
-              : unreconciledReasonZomatoVsPos?.join(","),
-          updated_at: new Date(),
-        });
+      // Perform bulk update for this batch
+      if (bulkUpdates.length > 0) {
+        console.log(`📍 [checkReconciliationStatus] Updating ${bulkUpdates.length} records with reconciliation status...`);
+        await Promise.all(
+          bulkUpdates.map((update) =>
+            db.zomato_vs_pos_summary.update(update, { 
+              where: { id: update.id },
+              logging: (sql) => {
+                console.log(`📊 [SQL] checkReconciliationStatus - Update Query for id ${update.id}:`);
+                console.log("   ", sql);
+              },
+            })
+          )
+        );
+        totalUpdated += bulkUpdates.length;
+        console.log(`📍 [checkReconciliationStatus] Updated ${bulkUpdates.length} records in batch ${offset}`);
+      }
 
-        results.push(record.pos_order_id);
-      } catch (error) {
-        errors.push({
-          record_id: record.pos_order_id,
-          error: error.message,
-        });
+      // Clear arrays for next batch to free memory
+      offset += BATCH_SIZE;
+      
+      // Log progress
+      console.log(`📍 [checkReconciliationStatus] Processed batch: ${offset}/${totalCount} records (${Math.round((offset/totalCount)*100)}%)`);
+      
+      // Force garbage collection hint (Node.js will handle it)
+      if (global.gc && offset % (BATCH_SIZE * 10) === 0) {
+        global.gc();
       }
     }
 
-    // Perform bulk update if there are records to update
-    if (bulkUpdates.length > 0) {
-      await Promise.all(
-        bulkUpdates.map((update) =>
-          db.zomato_vs_pos_summary.update(update, { where: { id: update.id } })
-        )
-      );
+    console.log("\n✅ [checkReconciliationStatus] Reconciliation processing complete!");
+    console.log(`📍 [checkReconciliationStatus] Total processed: ${totalProcessed} records`);
+    console.log(`📍 [checkReconciliationStatus] Successfully updated: ${totalUpdated} records`);
+    if (errors.length > 0) {
+      console.error(`⚠️ [checkReconciliationStatus] Failed to update ${errors.length} records:`, errors);
     }
 
-    console.log(`Processed ${summaryRecords.length} records`);
-    console.log(`Successfully updated ${results.length} records`);
-    if (errors.length > 0) {
-      console.error(`Failed to update ${errors.length} records:`, errors);
-    }
+    console.log("===========================================");
+    console.log("🎉 API COMPLETE - Returning success response");
+    console.log("===========================================\n");
+
+    // Return success response
+    return res.status(200).json({
+      success: true,
+      message: "Reconciliation completed successfully",
+      processed: totalProcessed,
+      updated: totalUpdated,
+      errors: errors.length,
+      errors_details: errors.length > 0 ? errors : undefined,
+    });
   } catch (error) {
-    console.error("Error in checkReconciliationStatus:", error);
+    console.error("\n❌ [checkReconciliationStatus] ERROR OCCURRED:");
+    console.error("   Error message:", error.message);
+    console.error("   Error stack:", error.stack);
+    console.error("===========================================\n");
+    return res.status(500).json({
+      success: false,
+      message: "Error in checkReconciliationStatus",
+      error: error.message,
+    });
   }
 };
 
@@ -2279,6 +2694,10 @@ const getThreePODashboardData = async (req, res) => {
   const requestId = Math.random().toString(36).substring(2, 15);
   const startTime = Date.now();
   
+  // ========== ENTRY POINT ==========
+  console.log("===========================================");
+  console.log("🚀 /threePODashboardData API IS HIT");
+  console.log("===========================================");
   console.log(`[${requestId}] [threePODashboardData] API Request Started`, {
     timestamp: new Date().toISOString(),
     requestId,
@@ -2287,6 +2706,16 @@ const getThreePODashboardData = async (req, res) => {
     userAgent: req.get('User-Agent'),
     ip: req.ip || req.connection.remoteAddress
   });
+
+  // Helper function to log SQL queries
+  const logSQL = (msg) => {
+    // Sequelize logging can pass either a string or an object
+    let sqlString = typeof msg === 'string' ? msg : (msg?.sql || msg?.query || JSON.stringify(msg));
+    // Clean up the SQL for better readability (replace multiple spaces with single space)
+    const formattedSQL = sqlString.replace(/\s+/g, ' ').trim();
+    console.log(`[${requestId}] 🔍 Actual SQL Query:`);
+    console.log(`[${requestId}] ${formattedSQL}`);
+  };
 
   try {
     const { startDate, endDate, stores } = req.body;
@@ -2317,7 +2746,16 @@ const getThreePODashboardData = async (req, res) => {
     console.log(`[${requestId}] [threePODashboardData] Processing for tenders:`, tenders);
 
     // Get summary data for all stores
-    console.log(`[${requestId}] [threePODashboardData] Executing summary data query`);
+    console.log(`\n[${requestId}] ════════════════════════════════════════`);
+    console.log(`[${requestId}] 📊 QUERY 1: Summary Data Query`);
+    console.log(`[${requestId}] ════════════════════════════════════════`);
+    console.log(`[${requestId}] Table: zomato_vs_pos_summary`);
+    console.log(`[${requestId}] WHERE conditions:`);
+    console.log(`[${requestId}]   - order_date BETWEEN '${startDate}' AND '${endDate}'`);
+    console.log(`[${requestId}]   - store_name IN (${stores.length} stores)`);
+    console.log(`[${requestId}]   - pos_order_id IS NOT NULL`);
+    console.log(`[${requestId}] SELECT aggregations: SUM(pos_net_amount), SUM(pos_final_amount), SUM(pos_commission_value), SUM(pos_tax_paid_by_customer), SUM(zomato_net_amount), SUM(zomato_final_amount), SUM(zomato_commission_value), SUM(zomato_tax_paid_by_customer), SUM(reconciled_amount)`);
+    
     const summaryQueryStart = Date.now();
     const summaryData = await db.zomato_vs_pos_summary.findAll({
       where: {
@@ -2347,13 +2785,12 @@ const getThreePODashboardData = async (req, res) => {
         [fn("SUM", col("pos_final_amount")), "receivablesVsReceipts"],
       ],
       raw: true,
+      logging: logSQL,
     });
     const summaryQueryTime = Date.now() - summaryQueryStart;
-    console.log(`[${requestId}] [threePODashboardData] Summary query completed in ${summaryQueryTime}ms`, {
-      queryTime: summaryQueryTime,
-      resultCount: summaryData.length,
-      summaryData: summaryData[0] || null
-    });
+    console.log(`[${requestId}] ✅ Query 1 completed in ${summaryQueryTime}ms`);
+    console.log(`[${requestId}] Result count: ${summaryData.length}`);
+    console.log(`[${requestId}] ════════════════════════════════════════\n`);
 
     // Convert summary data to numbers
     const summaryDataNumbers = summaryData[0]
@@ -2364,11 +2801,23 @@ const getThreePODashboardData = async (req, res) => {
       : {};
 
     // Get data for each tender
-    console.log(`[${requestId}] [threePODashboardData] Executing tender data queries for ${tenders.length} tenders`);
+    console.log(`[${requestId}] ════════════════════════════════════════`);
+    console.log(`[${requestId}] 📊 QUERY 2: Tender-wise Data (3PO Perspective)`);
+    console.log(`[${requestId}] ════════════════════════════════════════`);
+    console.log(`[${requestId}] Processing ${tenders.length} tender(s): ${tenders.join(", ")}`);
+    
     const tenderQueryStart = Date.now();
     const tenderData = await Promise.all(
       tenders.map(async (tender) => {
-        console.log(`[${requestId}] [threePODashboardData] Processing tender: ${tender}`);
+        console.log(`\n[${requestId}] ──────────────────────────────────────`);
+        console.log(`[${requestId}] 📋 Tender: ${tender}`);
+        console.log(`[${requestId}] Table: zomato_vs_pos_summary`);
+        console.log(`[${requestId}] WHERE conditions:`);
+        console.log(`[${requestId}]   - order_date BETWEEN '${startDate}' AND '${endDate}'`);
+        console.log(`[${requestId}]   - store_name IN (${stores.length} stores)`);
+        console.log(`[${requestId}]   - zomato_order_id IS NOT NULL`);
+        console.log(`[${requestId}] SELECT aggregations: SUM(pos_net_amount), SUM(pos_final_amount), SUM(pos_commission_value), SUM(pos_tax_paid_by_customer), SUM(zomato_net_amount), SUM(zomato_final_amount), SUM(zomato_commission_value), SUM(zomato_tax_paid_by_customer), SUM(reconciled_amount), SUM(zomato_net_amount) AS posVsThreePO`);
+        
         const tenderQueryStart = Date.now();
         const tenderSummary = await db.zomato_vs_pos_summary.findAll({
           where: {
@@ -2398,6 +2847,7 @@ const getThreePODashboardData = async (req, res) => {
             [fn("SUM", col("zomato_net_amount")), "posVsThreePO"],
           ],
           raw: true,
+          logging: logSQL,
         });
 
         // Convert tender summary data to numbers
@@ -2408,17 +2858,16 @@ const getThreePODashboardData = async (req, res) => {
             }, {})
           : {};
 
-        const { totalReceivables, totalReceipts } =
-          await calculateReceivablesVsReceipts(startDate, endDate, stores);
-
         const tenderQueryTime = Date.now() - tenderQueryStart;
-        console.log(`[${requestId}] [threePODashboardData] Tender ${tender} query completed in ${tenderQueryTime}ms`, {
-          tender,
-          queryTime: tenderQueryTime,
-          tenderSummaryNumbers,
-          totalReceivables,
-          totalReceipts
-        });
+        console.log(`[${requestId}] ✅ Tender ${tender} query completed in ${tenderQueryTime}ms`);
+
+        console.log(`[${requestId}] 📊 Executing Receivables vs Receipts calculation for tender: ${tender}`);
+        console.log(`[${requestId}]   Sub-Query: zomato_receivables_vs_receipts.findAll`);
+        console.log(`[${requestId}]   WHERE: order_date BETWEEN '${startDate}' AND '${endDate}', store_name IN (${stores.length} stores)`);
+        const { totalReceivables, totalReceipts } =
+          await calculateReceivablesVsReceipts(startDate, endDate, stores, requestId);
+        console.log(`[${requestId}] ✅ Receivables vs Receipts calculation completed (Receivables: ${totalReceivables}, Receipts: ${totalReceipts})`);
+        console.log(`[${requestId}] ──────────────────────────────────────`);
 
         return {
           ...tenderSummaryNumbers,
@@ -2436,16 +2885,26 @@ const getThreePODashboardData = async (req, res) => {
       })
     );
     const tenderQueryTime = Date.now() - tenderQueryStart;
-    console.log(`[${requestId}] [threePODashboardData] All tender queries completed in ${tenderQueryTime}ms`, {
-      totalTenderQueryTime: tenderQueryTime,
-      tenderDataCount: tenderData.length
-    });
+    console.log(`[${requestId}] ✅ All tender queries (3PO perspective) completed in ${tenderQueryTime}ms`);
+    console.log(`[${requestId}] Total tender data count: ${tenderData.length}`);
+    console.log(`[${requestId}] ════════════════════════════════════════\n`);
 
-    console.log(`[${requestId}] [threePODashboardData] Executing POS-wise data queries`);
+    console.log(`[${requestId}] ════════════════════════════════════════`);
+    console.log(`[${requestId}] 📊 QUERY 3: POS-wise Data`);
+    console.log(`[${requestId}] ════════════════════════════════════════`);
+    
     const posQueryStart = Date.now();
     const tenderWiseDataAsPerPOS = await Promise.all(
       tenders.map(async (tender) => {
-        console.log(`[${requestId}] [threePODashboardData] Processing POS data for tender: ${tender}`);
+        console.log(`\n[${requestId}] ──────────────────────────────────────`);
+        console.log(`[${requestId}] 📋 Processing POS data for tender: ${tender}`);
+        console.log(`[${requestId}] Table: zomato_vs_pos_summary`);
+        console.log(`[${requestId}] WHERE conditions:`);
+        console.log(`[${requestId}]   - order_date BETWEEN '${startDate}' AND '${endDate}'`);
+        console.log(`[${requestId}]   - store_name IN (${stores.length} stores)`);
+        console.log(`[${requestId}]   - pos_order_id IS NOT NULL`);
+        console.log(`[${requestId}] SELECT aggregations: SUM(pos_net_amount), SUM(pos_final_amount), SUM(pos_commission_value), SUM(pos_tax_paid_by_customer), SUM(zomato_net_amount), SUM(zomato_final_amount), SUM(zomato_commission_value), SUM(zomato_tax_paid_by_customer), SUM(reconciled_amount), SUM(zomato_net_amount) AS posVsThreePO`);
+        
         const posTenderQueryStart = Date.now();
         const tenderSummary = await db.zomato_vs_pos_summary.findAll({
           where: {
@@ -2475,6 +2934,7 @@ const getThreePODashboardData = async (req, res) => {
             [fn("SUM", col("zomato_net_amount")), "posVsThreePO"],
           ],
           raw: true,
+          logging: logSQL,
         });
 
         // Convert tender summary data to numbers
@@ -2485,21 +2945,23 @@ const getThreePODashboardData = async (req, res) => {
             }, {})
           : {};
 
+        const posTenderQueryTime = Date.now() - posTenderQueryStart;
+        console.log(`[${requestId}] ✅ POS tender ${tender} query completed in ${posTenderQueryTime}ms`);
+
+        console.log(`[${requestId}] 📊 Executing Receivables vs Receipts calculation (POS) for tender: ${tender}`);
+        console.log(`[${requestId}]   Sub-Query 1: zomato_vs_pos_summary.findOne (SUM pos_final_amount)`);
+        console.log(`[${requestId}]   WHERE: order_date BETWEEN '${startDate}' AND '${endDate}', store_name IN (${stores.length} stores), pos_order_id IS NOT NULL`);
+        console.log(`[${requestId}]   Sub-Query 2: zomato_receivables_vs_receipts.findAll`);
+        console.log(`[${requestId}]   WHERE: order_date BETWEEN '${startDate}' AND '${endDate}', store_name IN (${stores.length} stores)`);
         const { totalReceivablesPos, totalReceiptsPos } =
           await calculateReceivablesVsReceiptsForPos(
             startDate,
             endDate,
-            stores
+            stores,
+            requestId
           );
-
-        const posTenderQueryTime = Date.now() - posTenderQueryStart;
-        console.log(`[${requestId}] [threePODashboardData] POS tender ${tender} query completed in ${posTenderQueryTime}ms`, {
-          tender,
-          queryTime: posTenderQueryTime,
-          tenderSummaryNumbers,
-          totalReceivablesPos,
-          totalReceiptsPos
-        });
+        console.log(`[${requestId}] ✅ Receivables vs Receipts (POS) calculation completed (Receivables: ${totalReceivablesPos}, Receipts: ${totalReceiptsPos})`);
+        console.log(`[${requestId}] ──────────────────────────────────────`);
 
         return {
           ...tenderSummaryNumbers,
@@ -2517,13 +2979,21 @@ const getThreePODashboardData = async (req, res) => {
       })
     );
     const posQueryTime = Date.now() - posQueryStart;
-    console.log(`[${requestId}] [threePODashboardData] All POS queries completed in ${posQueryTime}ms`, {
-      totalPosQueryTime: posQueryTime,
-      posDataCount: tenderWiseDataAsPerPOS.length
-    });
+    console.log(`[${requestId}] ✅ All POS queries completed in ${posQueryTime}ms`);
+    console.log(`[${requestId}] Total POS data count: ${tenderWiseDataAsPerPOS.length}`);
+    console.log(`[${requestId}] ════════════════════════════════════════\n`);
 
     // Get Instore numbers for Sales
-    console.log(`[${requestId}] [threePODashboardData] Executing instore data query`);
+    console.log(`[${requestId}] ════════════════════════════════════════`);
+    console.log(`[${requestId}] 📊 QUERY 4: Instore Data Query`);
+    console.log(`[${requestId}] ════════════════════════════════════════`);
+    console.log(`[${requestId}] Table: orders`);
+    console.log(`[${requestId}] WHERE conditions:`);
+    console.log(`[${requestId}]   - date BETWEEN '${startDate}' AND '${endDate}'`);
+    console.log(`[${requestId}]   - store_name IN (${stores.length} stores)`);
+    console.log(`[${requestId}]   - online_order_taker IN ('CASH', 'CARD', 'UPI')`);
+    console.log(`[${requestId}] SELECT aggregation: SUM(payment) AS instoreSales`);
+    
     const instoreQueryStart = Date.now();
     const instoreTenders = ["CASH", "CARD", "UPI"];
     const instoreData = await db.orders.findAll({
@@ -2541,13 +3011,13 @@ const getThreePODashboardData = async (req, res) => {
       },
       attributes: [[fn("SUM", col("payment")), "instoreSales"]],
       raw: true,
+      logging: logSQL,
     });
     const instoreQueryTime = Date.now() - instoreQueryStart;
-    console.log(`[${requestId}] [threePODashboardData] Instore query completed in ${instoreQueryTime}ms`, {
-      queryTime: instoreQueryTime,
-      instoreTenders,
-      instoreData: instoreData[0] || null
-    });
+    console.log(`[${requestId}] ✅ Query 4 (Instore) completed in ${instoreQueryTime}ms`);
+    console.log(`[${requestId}] Instore tenders: ${instoreTenders.join(", ")}`);
+    console.log(`[${requestId}] Result: ${instoreData[0]?.instoreSales || 0}`);
+    console.log(`[${requestId}] ════════════════════════════════════════\n`);
 
     // Prepare final response
     const response = {
@@ -2566,14 +3036,12 @@ const getThreePODashboardData = async (req, res) => {
     };
 
     const totalTime = Date.now() - startTime;
-    console.log(`[${requestId}] [threePODashboardData] API Request Completed Successfully`, {
-      totalTime: totalTime,
-      summaryDataNumbers,
-      tenderDataCount: tenderData.length,
-      posDataCount: tenderWiseDataAsPerPOS.length,
-      instoreTotal: instoreData[0]?.instoreSales || 0,
-      responseKeys: Object.keys(response)
-    });
+    console.log(`[${requestId}] ════════════════════════════════════════`);
+    console.log(`[${requestId}] ✅ API Request Completed Successfully`);
+    console.log(`[${requestId}] ════════════════════════════════════════`);
+    console.log(`[${requestId}] Total execution time: ${totalTime}ms`);
+    console.log(`[${requestId}] Summary: tenderDataCount=${tenderData.length}, posDataCount=${tenderWiseDataAsPerPOS.length}, instoreTotal=${instoreData[0]?.instoreSales || 0}`);
+    console.log(`[${requestId}] ════════════════════════════════════════\n`);
 
     res.status(200).json({
       success: true,
@@ -2596,8 +3064,16 @@ const getThreePODashboardData = async (req, res) => {
   }
 };
 
-const calculateReceivablesVsReceipts = async (startDate, endDate, stores) => {
+const calculateReceivablesVsReceipts = async (startDate, endDate, stores, requestId = null) => {
   // --- Receipts summary logic (inserted here) ---
+  const logSQLForHelper = requestId ? (msg) => {
+    // Sequelize logging can pass either a string or an object
+    let sqlString = typeof msg === 'string' ? msg : (msg?.sql || msg?.query || JSON.stringify(msg));
+    const formattedSQL = sqlString.replace(/\s+/g, ' ').trim();
+    console.log(`[${requestId}]     🔍 Actual SQL Query:`);
+    console.log(`[${requestId}]     ${formattedSQL}`);
+  } : false;
+
   const receiptsRecords = await db.zomato_receivables_vs_receipts.findAll({
     where: {
       ...(startDate && endDate
@@ -2608,7 +3084,11 @@ const calculateReceivablesVsReceipts = async (startDate, endDate, stores) => {
         : {}),
     },
     raw: true,
+    logging: logSQLForHelper,
   });
+  if (requestId) {
+    console.log(`[${requestId}]     ✅ Receivables query returned ${receiptsRecords.length} records`);
+  }
   const utrMap = new Map();
   for (const rec of receiptsRecords) {
     if (!rec.utr_number) continue;
@@ -2635,8 +3115,17 @@ const calculateReceivablesVsReceipts = async (startDate, endDate, stores) => {
 const calculateReceivablesVsReceiptsForPos = async (
   startDate,
   endDate,
-  stores
+  stores,
+  requestId = null
 ) => {
+  const logSQLForHelper = requestId ? (msg) => {
+    // Sequelize logging can pass either a string or an object
+    let sqlString = typeof msg === 'string' ? msg : (msg?.sql || msg?.query || JSON.stringify(msg));
+    const formattedSQL = sqlString.replace(/\s+/g, ' ').trim();
+    console.log(`[${requestId}]     🔍 Actual SQL Query:`);
+    console.log(`[${requestId}]     ${formattedSQL}`);
+  } : false;
+
   // Receivable: sum of pos_final_amount from zomato_vs_pos_summary
   const receivableResult = await db.zomato_vs_pos_summary.findOne({
     where: {
@@ -2650,8 +3139,12 @@ const calculateReceivablesVsReceiptsForPos = async (
     },
     attributes: [[fn("SUM", col("pos_final_amount")), "totalReceivables"]],
     raw: true,
+    logging: logSQLForHelper,
   });
   const totalReceivablesPos = Number(receivableResult?.totalReceivables) || 0;
+  if (requestId) {
+    console.log(`[${requestId}]     ✅ Receivables query returned: ${totalReceivablesPos}`);
+  }
 
   // Receipt: sum of deposit_amount for unique utr_number from zomato_receivables_vs_receipts
   const receiptsRecords = await db.zomato_receivables_vs_receipts.findAll({
@@ -2664,7 +3157,11 @@ const calculateReceivablesVsReceiptsForPos = async (
         : {}),
     },
     raw: true,
+    logging: logSQLForHelper,
   });
+  if (requestId) {
+    console.log(`[${requestId}]     ✅ Receipts query returned ${receiptsRecords.length} records`);
+  }
   const utrSet = new Set();
   let totalReceiptsPos = 0;
   for (const rec of receiptsRecords) {
@@ -2687,44 +3184,12 @@ const getInstoreDashboardData = async (req, res) => {
       });
     }
 
-    // Get store mappings
-    // const storeMappings = await db.store.findAll({
-    //   where: {
-    //     store_code: {
-    //       [Op.in]: stores,
-    //     },
-    //   },
-    //   attributes: ["store_code", "store_name"],
-    //   raw: true,
-    // });
+    // Bank name mappings for CARD and UPI
+    const cardBanks = ["AMEX", "YES", "ICICI", "ICICI_LYRA", "HDFC", "SBI87"];
+    const upiBanks = ["PHONEPE", "YES_BANK_QR"];
 
-    // Create a mapping of store_code to store_name
-    // const storeCodeToName = storeMappings.reduce((acc, store) => {
-    //   acc[store.store_code] = store.store_name;
-    //   return acc;
-    // }, {});
-
-    // Get Instore numbers for Sales
-    const aggregators = ["Zomato", "Swiggy", "MagicPin"];
-    const aggregatorsData = await db.orders.findAll({
-      where: {
-        date: {
-          [Op.between]: [startDate, endDate],
-        },
-        store_name: {
-          [Op.in]: stores,
-        },
-        online_order_taker: {
-          [Op.in]: aggregators,
-        },
-        // order_status_pos: "Delivered",
-      },
-      attributes: [[fn("SUM", col("payment")), "aggregatorSales"]],
-      raw: true,
-    });
-
-    // Static response with blank values
-    const response = {
+    // Helper function to create default bank data
+    const createDefaultBankData = (bankName) => ({
       sales: 0,
       salesCount: 0,
       receipts: 0,
@@ -2740,246 +3205,30 @@ const getInstoreDashboardData = async (req, res) => {
       mprVsBank: 0,
       salesVsPickup: 0,
       pickupVsReceipts: 0,
-      tenderWiseDataList: [
-        {
-          sales: 0,
-          salesCount: 0,
-          receipts: 0,
-          receiptsCount: 0,
-          reconciled: 0,
-          reconciledCount: 0,
-          difference: 0,
-          differenceCount: 0,
-          charges: 0,
-          booked: 0,
-          posVsTrm: 0,
-          trmVsMpr: 0,
-          mprVsBank: 0,
-          salesVsPickup: 0,
-          pickupVsReceipts: 0,
-          tenderName: "CARD",
-          bankWiseDataList: [
-            {
-              sales: 0,
-              salesCount: 0,
-              receipts: 0,
-              receiptsCount: 0,
-              reconciled: 0,
-              reconciledCount: 0,
-              difference: 0,
-              differenceCount: 0,
-              charges: 0,
-              booked: 0,
-              posVsTrm: 0,
-              trmVsMpr: 0,
-              mprVsBank: 0,
-              salesVsPickup: 0,
-              pickupVsReceipts: 0,
-              bankName: "AMEX",
-              missingTidValue: "0/0",
-              unreconciled: 0,
-            },
-            {
-              sales: 0,
-              salesCount: 0,
-              receipts: 0,
-              receiptsCount: 0,
-              reconciled: 0,
-              reconciledCount: 0,
-              difference: 0,
-              differenceCount: 0,
-              charges: 0,
-              booked: 0,
-              posVsTrm: 0,
-              trmVsMpr: 0,
-              mprVsBank: 0,
-              salesVsPickup: 0,
-              pickupVsReceipts: 0,
-              bankName: "YES",
-              missingTidValue: "0/0",
-              unreconciled: 0,
-            },
-            {
-              sales: 0,
-              salesCount: 0,
-              receipts: 0,
-              receiptsCount: 0,
-              reconciled: 0,
-              reconciledCount: 0,
-              difference: 0,
-              differenceCount: 0,
-              charges: 0,
-              booked: 0,
-              posVsTrm: 0,
-              trmVsMpr: 0,
-              mprVsBank: 0,
-              salesVsPickup: 0,
-              pickupVsReceipts: 0,
-              bankName: "ICICI",
-              missingTidValue: "0/0",
-              unreconciled: 0,
-            },
-            {
-              sales: 0,
-              salesCount: 0,
-              receipts: 0,
-              receiptsCount: 0,
-              reconciled: 0,
-              reconciledCount: 0,
-              difference: 0,
-              differenceCount: 0,
-              charges: 0,
-              booked: 0,
-              posVsTrm: 0,
-              trmVsMpr: 0,
-              mprVsBank: 0,
-              salesVsPickup: 0,
-              pickupVsReceipts: 0,
-              bankName: "ICICI_LYRA",
-              missingTidValue: "0/0",
-              unreconciled: 0,
-            },
-            {
-              sales: 0,
-              salesCount: 0,
-              receipts: 0,
-              receiptsCount: 0,
-              reconciled: 0,
-              reconciledCount: 0,
-              difference: 0,
-              differenceCount: 0,
-              charges: 0,
-              booked: 0,
-              posVsTrm: 0,
-              trmVsMpr: 0,
-              mprVsBank: 0,
-              salesVsPickup: 0,
-              pickupVsReceipts: 0,
-              bankName: "HDFC",
-              missingTidValue: "0/0",
-              unreconciled: 0,
-            },
-            {
-              sales: 0,
-              salesCount: 0,
-              receipts: 0,
-              receiptsCount: 0,
-              reconciled: 0,
-              reconciledCount: 0,
-              difference: 0,
-              differenceCount: 0,
-              charges: 0,
-              booked: 0,
-              posVsTrm: 0,
-              trmVsMpr: 0,
-              mprVsBank: 0,
-              salesVsPickup: 0,
-              pickupVsReceipts: 0,
-              bankName: "SBI87",
-              missingTidValue: "0/0",
-              unreconciled: 0,
-            },
-          ],
-          trmSalesData: {
-            sales: 0,
-            salesCount: 0,
-            receipts: 0,
-            receiptsCount: 0,
-            reconciled: 0,
-            reconciledCount: 0,
-            difference: 0,
-            differenceCount: 0,
-            charges: 0,
-            booked: 0,
-            posVsTrm: 0,
-            trmVsMpr: 0,
-            mprVsBank: 0,
-            salesVsPickup: 0,
-            pickupVsReceipts: 0,
-            unreconciled: 0,
-          },
-          unreconciled: 0,
-        },
-        {
-          sales: 0,
-          salesCount: 0,
-          receipts: 0,
-          receiptsCount: 0,
-          reconciled: 0,
-          reconciledCount: 0,
-          difference: 0,
-          differenceCount: 0,
-          charges: 0,
-          booked: 0,
-          posVsTrm: 0,
-          trmVsMpr: 0,
-          mprVsBank: 0,
-          salesVsPickup: 0,
-          pickupVsReceipts: 0,
-          tenderName: "UPI",
-          bankWiseDataList: [
-            {
-              sales: 0,
-              salesCount: 0,
-              receipts: 0,
-              receiptsCount: 0,
-              reconciled: 0,
-              reconciledCount: 0,
-              difference: 0,
-              differenceCount: 0,
-              charges: 0,
-              booked: 0,
-              posVsTrm: 0,
-              trmVsMpr: 0,
-              mprVsBank: 0,
-              salesVsPickup: 0,
-              pickupVsReceipts: 0,
-              bankName: "PHONEPE",
-              missingTidValue: "0/0",
-              unreconciled: 0,
-            },
-            {
-              sales: 0,
-              salesCount: 0,
-              receipts: 0,
-              receiptsCount: 0,
-              reconciled: 0,
-              reconciledCount: 0,
-              difference: 0,
-              differenceCount: 0,
-              charges: 0,
-              booked: 0,
-              posVsTrm: 0,
-              trmVsMpr: 0,
-              mprVsBank: 0,
-              salesVsPickup: 0,
-              pickupVsReceipts: 0,
-              bankName: "YES_BANK_QR",
-              missingTidValue: "0/0",
-              unreconciled: 0,
-            },
-          ],
-          trmSalesData: {
-            sales: 0,
-            salesCount: 0,
-            receipts: 0,
-            receiptsCount: 0,
-            reconciled: 0,
-            reconciledCount: 0,
-            difference: 0,
-            differenceCount: 0,
-            charges: 0,
-            booked: 0,
-            posVsTrm: 0,
-            trmVsMpr: 0,
-            mprVsBank: 0,
-            salesVsPickup: 0,
-            pickupVsReceipts: 0,
-            unreconciled: 0,
-          },
-          unreconciled: 0,
-        },
-      ],
+      bankName: bankName,
+      missingTidValue: "0/0",
+      unreconciled: 0,
+    });
+
+    // Helper function to create default tender data structure
+    const createDefaultTenderData = (tenderName, banks) => ({
+      sales: 0,
+      salesCount: 0,
+      receipts: 0,
+      receiptsCount: 0,
+      reconciled: 0,
+      reconciledCount: 0,
+      difference: 0,
+      differenceCount: 0,
+      charges: 0,
+      booked: 0,
+      posVsTrm: 0,
+      trmVsMpr: 0,
+      mprVsBank: 0,
+      salesVsPickup: 0,
+      pickupVsReceipts: 0,
+      tenderName: tenderName,
+      bankWiseDataList: banks.map((bank) => createDefaultBankData(bank)),
       trmSalesData: {
         sales: 0,
         salesCount: 0,
@@ -2999,7 +3248,430 @@ const getInstoreDashboardData = async (req, res) => {
         unreconciled: 0,
       },
       unreconciled: 0,
-      aggregatorTotal: aggregatorsData[0]?.aggregatorSales || 0,
+    });
+
+    // Initialize response structure
+    const tenderWiseData = {
+      CARD: createDefaultTenderData("CARD", cardBanks),
+      UPI: createDefaultTenderData("UPI", upiBanks),
+    };
+
+    // Get aggregator total (for online orders)
+    const aggregators = ["Zomato", "Swiggy", "MagicPin"];
+    const aggregatorsData = await db.orders.findAll({
+      where: {
+        date: {
+          [Op.between]: [startDate, endDate],
+        },
+        store_name: {
+          [Op.in]: stores,
+        },
+        online_order_taker: {
+          [Op.in]: aggregators,
+        },
+      },
+      attributes: [[fn("SUM", col("payment")), "aggregatorSales"]],
+      raw: true,
+    });
+    console.log(`[getInstoreDashboardData] Aggregator Total:`, aggregatorsData[0]?.aggregatorSales || 0);
+
+    // Get POS sales data for CARD and UPI from orders table
+    // Match production query pattern - using col("payment") directly (MySQL will auto-cast)
+    // Note: Using case-insensitive matching with Op.iLike or literal for MySQL
+    const instoreTenders = ["CARD", "UPI"];
+    
+    console.log(`[getInstoreDashboardData] Query Parameters:`, {
+      startDate,
+      endDate,
+      storesCount: stores.length,
+      instoreTenders,
+    });
+    
+    // First, let's check what tender values actually exist
+    const allTendersCheck = await db.orders.findAll({
+      where: {
+        date: {
+          [Op.between]: [startDate, endDate],
+        },
+        store_name: {
+          [Op.in]: stores.slice(0, 10), // Check first 10 stores
+        },
+      },
+      attributes: [
+        "online_order_taker",
+        [fn("COUNT", col("online_order_taker")), "count"],
+      ],
+      group: ["online_order_taker"],
+      raw: true,
+      limit: 20,
+    });
+    console.log(`[getInstoreDashboardData] Available tender values (sample):`, JSON.stringify(allTendersCheck, null, 2));
+    
+    const posSalesData = await db.orders.findAll({
+      where: {
+        date: {
+          [Op.between]: [startDate, endDate],
+        },
+        store_name: {
+          [Op.in]: stores,
+        },
+        [Op.or]: [
+          literal("UPPER(online_order_taker) = 'CARD'"),
+          literal("UPPER(online_order_taker) = 'UPI'"),
+          literal("UPPER(TRIM(online_order_taker)) = 'CARD'"),
+          literal("UPPER(TRIM(online_order_taker)) = 'UPI'"),
+        ],
+      },
+      attributes: [
+        "online_order_taker",
+        [fn("SUM", col("payment")), "sales"],
+        [fn("COUNT", col("payment")), "salesCount"],
+      ],
+      group: ["online_order_taker"],
+      raw: true,
+    });
+
+    // Debug logging
+    console.log(`[getInstoreDashboardData] POS Sales Data Query Results:`, JSON.stringify(posSalesData, null, 2));
+    console.log(`[getInstoreDashboardData] Found ${posSalesData.length} rows from orders table`);
+    if (posSalesData.length > 0) {
+      posSalesData.forEach((row, idx) => {
+        console.log(`[getInstoreDashboardData] Row ${idx}:`, {
+          tender: row.online_order_taker,
+          sales: row.sales,
+          salesType: typeof row.sales,
+          salesCount: row.salesCount,
+        });
+      });
+    } else {
+      console.warn(`[getInstoreDashboardData] No POS sales data found! Check if data exists for date range ${startDate} to ${endDate} and stores.`);
+    }
+
+    // Get reconciliation data from pos_vs_trm_summary (optional - table might not exist)
+    let reconciliationData = [];
+    try {
+      reconciliationData = await db.pos_vs_trm_summary.findAll({
+        where: {
+          pos_date: {
+            [Op.between]: [startDate, endDate],
+          },
+          pos_store: {
+            [Op.in]: stores,
+          },
+          payment_mode: {
+            [Op.in]: ["CARD", "UPI"],
+          },
+        },
+        attributes: [
+          "payment_mode",
+          "acquirer",
+          [fn("SUM", literal("COALESCE(pos_amount, 0)")), "sales"],
+          [fn("COUNT", literal("CASE WHEN pos_amount IS NOT NULL THEN 1 END")), "salesCount"],
+          [fn("SUM", literal("COALESCE(reconciled_amount, 0)")), "reconciled"],
+          [fn("COUNT", literal("CASE WHEN reconciled_amount IS NOT NULL AND reconciled_amount > 0 THEN 1 END")), "reconciledCount"],
+          [fn("SUM", literal("COALESCE(unreconciled_amount, 0)")), "unreconciled"],
+          [fn("SUM", literal("CASE WHEN COALESCE(pos_amount, 0) != COALESCE(trm_amount, 0) THEN ABS(COALESCE(pos_amount, 0) - COALESCE(trm_amount, 0)) ELSE 0 END")), "difference"],
+          [fn("COUNT", literal("CASE WHEN COALESCE(pos_amount, 0) != COALESCE(trm_amount, 0) THEN 1 END")), "differenceCount"],
+        ],
+        group: ["payment_mode", "acquirer"],
+        raw: true,
+      });
+      console.log(`[getInstoreDashboardData] Reconciliation Data: Found ${reconciliationData.length} rows`);
+    } catch (reconciliationError) {
+      // Table might not exist or other database error
+      console.warn("Warning: Could not fetch reconciliation data from pos_vs_trm_summary:", reconciliationError.message);
+      // Continue with empty reconciliation data - sales data will still be populated from orders table
+      reconciliationData = [];
+    }
+
+    // Bank name mappings for acquirer to bank names
+    const acquirerToBankMap = {
+      AMEX: "AMEX",
+      YES: "YES",
+      ICICI: "ICICI",
+      "ICICI LYRA": "ICICI_LYRA",
+      ICICI_LYRA: "ICICI_LYRA",
+      HDFC: "HDFC",
+      SBI87: "SBI87",
+      SBI: "SBI87",
+      PHONEPE: "PHONEPE",
+      "YES BANK QR": "YES_BANK_QR",
+      YES_BANK_QR: "YES_BANK_QR",
+    };
+
+    // Get TRM data from trm table (for trmVsMpr calculation)
+    // Note: date field in trm table is STRING(64), so we need to handle date parsing
+    // The user confirmed: "trm data exist in the trm table"
+    let trmData = [];
+    try {
+      // Try trm table with date conversion (date is stored as STRING)
+      // Common date formats: 'YYYY-MM-DD HH:mm:ss', 'DD/MM/YYYY HH:mm:ss', etc.
+      // We'll try multiple date format patterns
+      trmData = await db.trm.findAll({
+        where: {
+          [Op.and]: [
+            literal(`STR_TO_DATE(date, '%Y-%m-%d %H:%i:%s') BETWEEN '${startDate}' AND '${endDate}'`),
+            {
+              store_name: {
+                [Op.in]: stores,
+              },
+              payment_mode: {
+                [Op.in]: ["CARD", "UPI"],
+              },
+            },
+          ],
+        },
+        attributes: [
+          "payment_mode",
+          "acquirer",
+          [fn("SUM", literal("COALESCE(amount, 0)")), "trmAmount"],
+          [fn("COUNT", literal("CASE WHEN amount IS NOT NULL THEN 1 END")), "trmCount"],
+        ],
+        group: ["payment_mode", "acquirer"],
+        raw: true,
+      });
+      console.log(`[getInstoreDashboardData] TRM Data from trm table: Found ${trmData.length} rows`);
+      
+      // If no data found, try alternative date format
+      if (trmData.length === 0) {
+        try {
+          trmData = await db.trm.findAll({
+            where: {
+              [Op.and]: [
+                literal(`STR_TO_DATE(date, '%d/%m/%Y %H:%i:%s') BETWEEN '${startDate}' AND '${endDate}'`),
+                {
+                  store_name: {
+                    [Op.in]: stores,
+                  },
+                  payment_mode: {
+                    [Op.in]: ["CARD", "UPI"],
+                  },
+                },
+              ],
+            },
+            attributes: [
+              "payment_mode",
+              "acquirer",
+              [fn("SUM", literal("COALESCE(amount, 0)")), "trmAmount"],
+              [fn("COUNT", literal("CASE WHEN amount IS NOT NULL THEN 1 END")), "trmCount"],
+            ],
+            group: ["payment_mode", "acquirer"],
+            raw: true,
+          });
+          console.log(`[getInstoreDashboardData] TRM Data from trm table (alt date format): Found ${trmData.length} rows`);
+        } catch (altDateError) {
+          console.warn("Warning: Could not parse dates in trm table with alternative format:", altDateError.message);
+        }
+      }
+      
+      // If still no data, try without date filter (in case date format is different)
+      // But limit to prevent too much data being loaded
+      if (trmData.length === 0) {
+        try {
+          trmData = await db.trm.findAll({
+            where: {
+              store_name: {
+                [Op.in]: stores,
+              },
+              payment_mode: {
+                [Op.in]: ["CARD", "UPI"],
+              },
+            },
+            attributes: [
+              "payment_mode",
+              "acquirer",
+              [fn("SUM", literal("COALESCE(amount, 0)")), "trmAmount"],
+              [fn("COUNT", literal("CASE WHEN amount IS NOT NULL THEN 1 END")), "trmCount"],
+            ],
+            group: ["payment_mode", "acquirer"],
+            raw: true,
+            limit: 1000, // Limit grouped results
+          });
+          console.log(`[getInstoreDashboardData] TRM Data from trm table (no date filter): Found ${trmData.length} rows`);
+        } catch (noDateFilterError) {
+          console.warn("Warning: Could not fetch TRM data from trm table (no date filter):", noDateFilterError.message);
+          trmData = [];
+        }
+      }
+    } catch (trmError) {
+      console.warn("Warning: Could not fetch TRM data from trm table:", trmError.message);
+      trmData = [];
+    }
+
+    // Process POS sales data from orders table and populate tender-level sales
+    posSalesData.forEach((row) => {
+      const tender = row.online_order_taker;
+      const sales = parseFloat(row.sales || 0);
+      const salesCount = parseInt(row.salesCount || 0);
+      
+      console.log(`[getInstoreDashboardData] Processing row: tender=${tender}, sales=${sales}, salesCount=${salesCount}`);
+      
+      if (tender === "CARD" && tenderWiseData.CARD) {
+        tenderWiseData.CARD.sales += sales;
+        tenderWiseData.CARD.salesCount += salesCount;
+        // posVsTrm = POS sales amount
+        tenderWiseData.CARD.posVsTrm = sales;
+      } else if (tender === "UPI" && tenderWiseData.UPI) {
+        tenderWiseData.UPI.sales += sales;
+        tenderWiseData.UPI.salesCount += salesCount;
+        // posVsTrm = POS sales amount
+        tenderWiseData.UPI.posVsTrm = sales;
+      }
+    });
+
+    // Process TRM data and populate trmVsMpr
+    trmData.forEach((row) => {
+      const paymentMode = row.payment_mode || "";
+      const acquirer = (row.acquirer || "").trim().toUpperCase();
+      const bankName = acquirerToBankMap[acquirer] || acquirer;
+      const trmAmount = parseFloat(row.trmAmount || 0);
+
+      if (paymentMode === "CARD" && tenderWiseData.CARD) {
+        tenderWiseData.CARD.trmVsMpr += trmAmount;
+      } else if (paymentMode === "UPI" && tenderWiseData.UPI) {
+        tenderWiseData.UPI.trmVsMpr += trmAmount;
+      }
+    });
+
+    // Process reconciliation data and map acquirer to bank names
+    reconciliationData.forEach((row) => {
+      const paymentMode = row.payment_mode || "";
+      const acquirer = (row.acquirer || "").trim().toUpperCase();
+      const bankName = acquirerToBankMap[acquirer] || acquirer;
+
+      if (paymentMode === "CARD" && cardBanks.includes(bankName)) {
+        const bankIndex = cardBanks.indexOf(bankName);
+        if (bankIndex >= 0 && bankIndex < tenderWiseData.CARD.bankWiseDataList.length) {
+          const bankData = tenderWiseData.CARD.bankWiseDataList[bankIndex];
+          bankData.sales += parseFloat(row.sales || 0);
+          bankData.salesCount += parseInt(row.salesCount || 0);
+          bankData.reconciled += parseFloat(row.reconciled || 0);
+          bankData.reconciledCount += parseInt(row.reconciledCount || 0);
+          bankData.unreconciled += parseFloat(row.unreconciled || 0);
+          bankData.difference += parseFloat(row.difference || 0);
+          bankData.differenceCount += parseInt(row.differenceCount || 0);
+        }
+      } else if (paymentMode === "UPI" && upiBanks.includes(bankName)) {
+        const bankIndex = upiBanks.indexOf(bankName);
+        if (bankIndex >= 0 && bankIndex < tenderWiseData.UPI.bankWiseDataList.length) {
+          const bankData = tenderWiseData.UPI.bankWiseDataList[bankIndex];
+          bankData.sales += parseFloat(row.sales || 0);
+          bankData.salesCount += parseInt(row.salesCount || 0);
+          bankData.reconciled += parseFloat(row.reconciled || 0);
+          bankData.reconciledCount += parseInt(row.reconciledCount || 0);
+          bankData.unreconciled += parseFloat(row.unreconciled || 0);
+          bankData.difference += parseFloat(row.difference || 0);
+          bankData.differenceCount += parseInt(row.differenceCount || 0);
+        }
+      }
+    });
+
+    // Aggregate data for each tender
+    Object.keys(tenderWiseData).forEach((tenderKey) => {
+      const tenderData = tenderWiseData[tenderKey];
+      
+      // Store initial sales from orders table (before aggregating from bank data)
+      const salesFromOrders = tenderData.sales;
+      const salesCountFromOrders = tenderData.salesCount;
+      
+      // Reset sales counters (will be recalculated from bank data if reconciliation table exists)
+      tenderData.sales = 0;
+      tenderData.salesCount = 0;
+      
+      // Sum up all bank data for this tender
+      tenderData.bankWiseDataList.forEach((bankData) => {
+        tenderData.sales += bankData.sales;
+        tenderData.salesCount += bankData.salesCount;
+        tenderData.reconciled += bankData.reconciled;
+        tenderData.reconciledCount += bankData.reconciledCount;
+        tenderData.difference += bankData.difference;
+        tenderData.differenceCount += bankData.differenceCount;
+        tenderData.unreconciled += bankData.unreconciled;
+      });
+
+      // If reconciliation table had no data, use orders table data instead
+      if (tenderData.sales === 0 && salesFromOrders > 0) {
+        tenderData.sales = salesFromOrders;
+        tenderData.salesCount = salesCountFromOrders;
+      }
+
+      // Copy to TRM sales data including posVsTrm and trmVsMpr
+      tenderData.trmSalesData.sales = tenderData.sales;
+      tenderData.trmSalesData.salesCount = tenderData.salesCount;
+      tenderData.trmSalesData.reconciled = tenderData.reconciled;
+      tenderData.trmSalesData.reconciledCount = tenderData.reconciledCount;
+      tenderData.trmSalesData.difference = tenderData.difference;
+      tenderData.trmSalesData.differenceCount = tenderData.differenceCount;
+      tenderData.trmSalesData.unreconciled = tenderData.unreconciled;
+      tenderData.trmSalesData.posVsTrm = tenderData.posVsTrm;
+      tenderData.trmSalesData.trmVsMpr = tenderData.trmVsMpr;
+    });
+
+    // Calculate overall totals
+    const overallTotals = {
+      sales: 0,
+      salesCount: 0,
+      receipts: 0,
+      receiptsCount: 0,
+      reconciled: 0,
+      reconciledCount: 0,
+      difference: 0,
+      differenceCount: 0,
+      charges: 0,
+      booked: 0,
+      posVsTrm: 0,
+      trmVsMpr: 0,
+      mprVsBank: 0,
+      salesVsPickup: 0,
+      pickupVsReceipts: 0,
+      unreconciled: 0,
+    };
+
+    Object.values(tenderWiseData).forEach((tenderData) => {
+      overallTotals.sales += tenderData.sales;
+      overallTotals.salesCount += tenderData.salesCount;
+      overallTotals.reconciled += tenderData.reconciled;
+      overallTotals.reconciledCount += tenderData.reconciledCount;
+      overallTotals.difference += tenderData.difference;
+      overallTotals.differenceCount += tenderData.differenceCount;
+      overallTotals.unreconciled += tenderData.unreconciled;
+      // Note: posVsTrm and trmVsMpr are NOT aggregated at overall level (remain 0)
+      // They only exist at tender level in production response
+    });
+
+    // Calculate trmSalesData totals (aggregate from all tenders)
+    const trmSalesDataTotals = {
+      sales: 0,
+      salesCount: 0,
+      receipts: 0,
+      receiptsCount: 0,
+      reconciled: 0,
+      reconciledCount: 0,
+      difference: 0,
+      differenceCount: 0,
+      charges: 0,
+      booked: 0,
+      posVsTrm: 0,
+      trmVsMpr: 0,
+      mprVsBank: 0,
+      salesVsPickup: 0,
+      pickupVsReceipts: 0,
+      unreconciled: 0,
+    };
+
+    Object.values(tenderWiseData).forEach((tenderData) => {
+      trmSalesDataTotals.sales += tenderData.trmSalesData.sales || 0;
+      trmSalesDataTotals.salesCount += tenderData.trmSalesData.salesCount || 0;
+      // Note: posVsTrm and trmVsMpr in trmSalesData should remain 0 at overall level
+      // They are only populated at tender level in production response
+    });
+
+    // Build final response
+    const response = {
+      ...overallTotals,
+      tenderWiseDataList: [tenderWiseData.CARD, tenderWiseData.UPI],
+      trmSalesData: trmSalesDataTotals,
+      aggregatorTotal: parseFloat(aggregatorsData[0]?.aggregatorSales || 0),
     };
 
     res.status(200).json({
@@ -4040,7 +4712,7 @@ const getMissingStoreMappings = async (req, res) => {
       ],
       where: {
         store_code: {
-          [Op.notIn]: db.sequelize.literal(
+          [Op.notIn]: db.bercos.literal(
             '(SELECT DISTINCT store_code FROM zomato_mappings WHERE store_code IS NOT NULL)'
           )
         }

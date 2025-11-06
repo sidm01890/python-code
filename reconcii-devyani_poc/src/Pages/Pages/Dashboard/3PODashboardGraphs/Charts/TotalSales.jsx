@@ -47,6 +47,11 @@ export default function TotalSales() {
   } = useSelector((state) => state.CommonService);
 
   useEffect(() => {
+    // Ensure tenderWiseStoresMissedInMapping is an array to prevent filter errors
+    const mappingData = Array.isArray(tenderWiseStoresMissedInMapping) 
+      ? tenderWiseStoresMissedInMapping 
+      : [];
+    
     if (dashboard3POData?.threePOData !== undefined) {
       if (dashboardFilters?.salesType === "3PO Sales") {
         let dataList = [];
@@ -57,10 +62,10 @@ export default function TotalSales() {
           dataList?.push(field?.threePOSales);
           labelList.push(field?.tenderName);
           barColor?.push(THREE_PO_COLORS[field?.tenderName]);
-          let mappingItem = tenderWiseStoresMissedInMapping?.filter(
+          let mappingItem = mappingData?.filter(
             (tenderMapping) => tenderMapping?.threePO === field?.tenderName
           );
-          mappingStatus?.push(mappingItem ? mappingItem[0] : undefined);
+          mappingStatus?.push(mappingItem && mappingItem.length > 0 ? mappingItem[0] : undefined);
         });
         let graphData = {
           heading: "Bank Wise",
@@ -84,10 +89,10 @@ export default function TotalSales() {
           dataList?.push(field?.posSales);
           labelList.push(field?.tenderName);
           barColor?.push(THREE_PO_COLORS[field?.tenderName]);
-          let mappingItem = tenderWiseStoresMissedInMapping?.filter(
+          let mappingItem = mappingData?.filter(
             (tenderMapping) => tenderMapping?.threePO === field?.tenderName
           );
-          mappingStatus?.push(mappingItem ? mappingItem[0] : undefined);
+          mappingStatus?.push(mappingItem && mappingItem.length > 0 ? mappingItem[0] : undefined);
         });
         let graphData = {
           heading: "Tender Wise",
@@ -104,7 +109,7 @@ export default function TotalSales() {
         });
       }
     }
-  }, [dashboardData?.tenderWiseDataList, dashboardFilters?.salesType]);
+  }, [dashboard3POData, dashboardFilters?.salesType, tenderWiseStoresMissedInMapping]);
 
   const data = {
     datasets: [

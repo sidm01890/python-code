@@ -86,12 +86,26 @@ const useAuth = () => {
       );
       setLoading(false);
       if (response.status) {
+        // Normalize API response to support both {data: {access_token, user}} and {access_token, user}
+        const apiData = response?.data;
+        const accessToken = apiData?.access_token || apiData?.data?.access_token;
+        const refreshToken = apiData?.refresh_token || apiData?.data?.refresh_token;
+        const userPayload = apiData?.user || apiData?.data || {};
         let allowedModules = [];
         let allowedPermission = [];
-        const decodedToken = decodeJWT(response.data?.data?.access_token);
+        let decodedToken = null;
+        if (typeof accessToken === "string" && accessToken.includes(".")) {
+          try {
+            decodedToken = decodeJWT(accessToken);
+          } catch (e) {
+            decodedToken = null;
+          }
+        }
         let userDetails = {};
         try {
-          userDetails = JSON.parse(decodedToken?.USER_DETAILS);
+          userDetails = decodedToken?.USER_DETAILS
+            ? JSON.parse(decodedToken.USER_DETAILS)
+            : {};
           console.log("userDetails?.modules", userDetails?.modules);
           userDetails?.modules?.forEach((module) => {
             if (module?.permissions?.length > 0) {
@@ -113,17 +127,17 @@ const useAuth = () => {
 
         localStorage.setItem(
           "ReconciiToken",
-          response.data?.data?.access_token
+          accessToken || ""
         );
         localStorage.setItem(
           "ReconciiRefreshToken",
-          response.data?.data?.refresh_token
+          refreshToken || ""
         );
         localStorage.setItem(
           "userProfile",
-          JSON.stringify(response.data?.data)
+          JSON.stringify(userPayload)
         );
-        dispatch(setUserProfile(response.data?.data));
+        dispatch(setUserProfile(userPayload));
         makeLog(
           LOG_ACTIONS.LOGIN,
           "Login",
@@ -134,7 +148,15 @@ const useAuth = () => {
           {},
           userDetails
         );
-        fetchProfile();
+        // Store detailed profile immediately from login payload as backend has no profile endpoint
+        try {
+          dispatch(setUserDetailedProfile(userPayload));
+          localStorage.setItem(
+            "userDetailedProfile",
+            JSON.stringify(userPayload)
+          );
+        } catch (e) {}
+        // fetchProfile(userPayload); // keep for future if endpoint is added
         navigate("/dashboard");
         return;
       }
@@ -145,7 +167,7 @@ const useAuth = () => {
     }
   };
 
-  const fetchProfile = async () => {
+  const fetchProfile = async (fallbackProfile) => {
     try {
       const response = await requestCallGet(apiEndpoints.PROFILE);
       if (response.status) {
@@ -154,9 +176,26 @@ const useAuth = () => {
           "userDetailedProfile",
           JSON.stringify(response.data?.data)
         );
+        return;
+      }
+      if (fallbackProfile) {
+        dispatch(setUserDetailedProfile(fallbackProfile));
+        localStorage.setItem(
+          "userDetailedProfile",
+          JSON.stringify(fallbackProfile)
+        );
       }
     } catch (error) {
       console.error(error);
+      if (fallbackProfile) {
+        try {
+          dispatch(setUserDetailedProfile(fallbackProfile));
+          localStorage.setItem(
+            "userDetailedProfile",
+            JSON.stringify(fallbackProfile)
+          );
+        } catch (e) {}
+      }
     }
   };
 

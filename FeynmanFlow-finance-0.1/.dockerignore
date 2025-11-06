@@ -1,0 +1,9 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.env
+uploads/
+failed_chunks/
+.temp_*
+.vscode/
+*.sqlite3

@@ -20,6 +20,7 @@ const CustomSelect = (props) => {
             <option
               key={item[props.option_value]}
               value={item[props.option_value]}
+              disabled={item.disabled === true}
             >
               {item[props.option_label]}
             </option>

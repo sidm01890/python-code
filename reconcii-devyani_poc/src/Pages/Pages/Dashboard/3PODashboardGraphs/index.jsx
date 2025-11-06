@@ -89,18 +89,18 @@ const ThreePODashboardGraphs = () => {
   return (
     <div>
       <div className="flex-1">
-        <div class="grid grid-cols-12 gap-x-6">
-          <div class="xxl:col-span-6 md:col-span-6 col-span-12">
+        <div className="grid grid-cols-12 gap-x-6">
+          <div className="xxl:col-span-6 md:col-span-6 col-span-12">
             <GraphCard title={TITLES_CONST[1]}>
               <TotalSales />
             </GraphCard>
           </div>
-          <div class="xxl:col-span-6 md:col-span-6 col-span-12">
+          <div className="xxl:col-span-6 md:col-span-6 col-span-12">
             <GraphCard title={TITLES_CONST[2]} onChange={setSelectedDelta}>
               <StatusComparison selectedDelta={selectedDelta} />
             </GraphCard>
           </div>
-          {/* <div class="xxl:col-span-4 md:col-span-4 col-span-12">
+          {/* <div className="xxl:col-span-4 md:col-span-4 col-span-12">
             <GraphCard title={TITLES_CONST[3]}>
               <Reconciled />
             </GraphCard>
@@ -108,18 +108,18 @@ const ThreePODashboardGraphs = () => {
         </div>
       </div>
       <div className="flex-1">
-        <div class="grid grid-cols-12 gap-x-6">
-          <div class="xxl:col-span-4 md:col-span-4 col-span-12">
+        <div className="grid grid-cols-12 gap-x-6">
+          <div className="xxl:col-span-4 md:col-span-4 col-span-12">
             <GraphCard title={TITLES_CONST[3]}>
               <Receivables />
             </GraphCard>
           </div>
-          <div class="xxl:col-span-4 md:col-span-4 col-span-12">
+          <div className="xxl:col-span-4 md:col-span-4 col-span-12">
             <GraphCard title={TITLES_CONST[4]}>
               <Reconciled3PO />
             </GraphCard>
           </div>
-          <div class="xxl:col-span-4 md:col-span-4 col-span-12">
+          <div className="xxl:col-span-4 md:col-span-4 col-span-12">
             <GraphCard title={TITLES_CONST[5]} onChange={setChargesDelta}>
               <Charges3PO selectedDelta={chargesDelta} />
             </GraphCard>

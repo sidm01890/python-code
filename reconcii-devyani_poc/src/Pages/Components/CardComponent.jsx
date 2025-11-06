@@ -10,7 +10,7 @@ export default function CardComponent({ label, number, icon }) {
             <p className="card-label">{label}</p>
             <p className="card-number">
               ₹{number}
-              <p className="lac-label"> lac</p>
+              <span className="lac-label"> lac</span>
             </p>
           </div>
           <div className="flex-1 flex justify-end items-center">

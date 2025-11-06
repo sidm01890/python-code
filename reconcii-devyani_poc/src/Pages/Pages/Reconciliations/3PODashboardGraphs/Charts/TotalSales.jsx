@@ -47,6 +47,11 @@ export default function TotalSales() {
   } = useSelector((state) => state.ReconciliationService);
 
   useEffect(() => {
+    // Ensure tenderWiseStoresMissedInMapping is an array to prevent filter errors
+    const mappingData = Array.isArray(tenderWiseStoresMissedInMapping) 
+      ? tenderWiseStoresMissedInMapping 
+      : [];
+    
     if (reconciliation3POData?.threePOData !== undefined) {
       if (reconciliationFilters?.salesType === "3PO Sales") {
         let dataList = [];
@@ -57,10 +62,10 @@ export default function TotalSales() {
           dataList?.push(field?.threePOSales);
           labelList.push(field?.tenderName);
           barColor?.push(THREE_PO_COLORS[field?.tenderName]);
-          let mappingItem = tenderWiseStoresMissedInMapping?.filter(
+          let mappingItem = mappingData?.filter(
             (tenderMapping) => tenderMapping?.threePO === field?.tenderName
           );
-          mappingStatus?.push(mappingItem ? mappingItem[0] : undefined);
+          mappingStatus?.push(mappingItem && mappingItem.length > 0 ? mappingItem[0] : undefined);
         });
         let graphData = {
           heading: "Bank Wise",
@@ -84,10 +89,10 @@ export default function TotalSales() {
           dataList?.push(field?.posSales);
           labelList.push(field?.tenderName);
           barColor?.push(THREE_PO_COLORS[field?.tenderName]);
-          let mappingItem = tenderWiseStoresMissedInMapping?.filter(
+          let mappingItem = mappingData?.filter(
             (tenderMapping) => tenderMapping?.threePO === field?.tenderName
           );
-          mappingStatus?.push(mappingItem ? mappingItem[0] : undefined);
+          mappingStatus?.push(mappingItem && mappingItem.length > 0 ? mappingItem[0] : undefined);
         });
         let graphData = {
           heading: "Tender Wise",
@@ -106,9 +111,10 @@ export default function TotalSales() {
       }
     }
   }, [
-    reconciliation3POData?.threePOData[0]?.tenderName,
+    reconciliation3POData,
     reconciliationFilters?.salesType,
     loadingDashboard,
+    tenderWiseStoresMissedInMapping,
   ]);
 
   const data = {

@@ -10,22 +10,22 @@ const DashboardNumbers = () => {
   const { totalSalesData, findSalesValue } = useDashboardNumber();
   return (
     <div className="flex-1">
-      <div class="grid grid-cols-12 gap-x-6">
-        <div class="xxl:col-span-4 md:col-span-4 col-span-12">
+      <div className="grid grid-cols-12 gap-x-6">
+        <div className="xxl:col-span-4 md:col-span-4 col-span-12">
           <CardComponent
             label={"TOTAL SALES"}
             number={totalSalesData()?.actual || "0"}
             icon={TotalSales}
           />
         </div>
-        <div class="xxl:col-span-4 md:col-span-4 col-span-12">
+        <div className="xxl:col-span-4 md:col-span-4 col-span-12">
           <CardComponent
             label={"IN STORE"}
             number={findSalesValue("Store Sales")}
             icon={InStore}
           />
         </div>
-        <div class="xxl:col-span-4 md:col-span-4 col-span-12">
+        <div className="xxl:col-span-4 md:col-span-4 col-span-12">
           <CardComponent
             label={"AGGREGATOR"}
             number={findSalesValue("Aggregator")}

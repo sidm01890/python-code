@@ -1,9 +1,9 @@
 {
   "info": {
     "name": "Devyani Reconciliation API Collection",
-    "description": "Complete API collection for Devyani Reconciliation System",
+    "description": "Complete API collection for Devyani Reconciliation System with enhanced logging, error handling, and environment validation",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "version": "1.0.0"
+    "version": "1.1.0"
   },
   "variable": [
     {
@@ -14,6 +14,16 @@
     {
       "key": "authToken",
       "value": "",
+      "type": "string"
+    },
+    {
+      "key": "environment",
+      "value": "development",
+      "type": "string"
+    },
+    {
+      "key": "apiVersion",
+      "value": "1.0.0",
       "type": "string"
     }
   ],
@@ -160,6 +170,77 @@
               "host": ["{{baseUrl}}"],
               "path": ["api", "auth", "update_subscriptions"]
             }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "System Health & Monitoring",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            },
+            "description": "Enhanced health check endpoint that returns system status, version, environment, and timestamp information"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/health",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["health"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"status\": \"healthy\",\n  \"message\": \"Reconcii Admin API is running\",\n  \"version\": \"1.0.0\",\n  \"environment\": \"development\",\n  \"timestamp\": 1703123456.789\n}"
+            }
+          ]
+        },
+        {
+          "name": "API Documentation",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api-docs",
+              "host": ["{{baseUrl}}"],
+              "path": ["api-docs"]
+            },
+            "description": "Access the interactive API documentation (Swagger UI)"
+          },
+          "response": []
+        },
+        {
+          "name": "ReDoc Documentation",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/redoc",
+              "host": ["{{baseUrl}}"],
+              "path": ["redoc"]
+            },
+            "description": "Access the ReDoc API documentation"
           },
           "response": []
         }

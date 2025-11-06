@@ -1,0 +1,8 @@
+2025-10-13 12:44:50,208 - __main__ - INFO - Downloading NLTK 'wordnet' corpus...
+2025-10-13 12:44:50,441 - __main__ - INFO - NLTK 'wordnet' corpus downloaded.
+2025-10-13 12:47:31,365 - __main__ - INFO - Downloading NLTK 'wordnet' corpus...
+2025-10-13 12:47:31,580 - __main__ - INFO - NLTK 'wordnet' corpus downloaded.
+2025-10-13 12:47:31,580 - __main__ - INFO - Starting column vector insertion process
+2025-10-13 12:47:31,583 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: cpu
+2025-10-13 12:47:31,583 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: all-MiniLM-L6-v2
+2025-10-13 12:47:35,888 - __main__ - INFO - Column vector insertion process completed successfully

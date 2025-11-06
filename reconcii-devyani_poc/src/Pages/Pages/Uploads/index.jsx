@@ -18,12 +18,24 @@ export default function Uploads() {
     handleFileChange,
     onSubmit,
     files,
+    clientOptions,
   } = useUploads();
 
   return (
     <div className="">
       <BlankCard header={<h4 class="box-title font-bold text-base">UPLOAD</h4>}>
         <div className="pt-3 w-full">
+          <div className="md:w-1/3 mb-3">
+            <CustomSelect
+              label="Client"
+              required
+              data={[{ value: "-Select Client-", label: "-Select Client-" }, ...clientOptions]}
+              option_value={"value"}
+              option_label={"label"}
+              onChange={(e) => handleChange("client", e.target.value)}
+              value={values?.client}
+            />
+          </div>
           <div className="md:w-1/3 mb-3">
             <CustomSelect
               label="Type"
@@ -33,6 +45,7 @@ export default function Uploads() {
               onChange={(e) => handleChange("type", e.target.value)}
               value={values?.type}
               required
+              disabled={!values?.client}
             />
           </div>
           <div className="md:w-1/3 mb-3">
@@ -49,6 +62,7 @@ export default function Uploads() {
               option_label={"tender"}
               onChange={(e) => handleChange("tender", e.target.value)}
               value={values?.tender}
+              disabled={!values?.type}
             />
           </div>
           <div className="md:w-1/3 mb-3">
@@ -60,6 +74,7 @@ export default function Uploads() {
               option_label={"type"}
               onChange={(e) => handleChange("payment", e.target.value)}
               value={values?.payment}
+              disabled={!values?.tender}
             />
           </div>
           <div className="custom-file-picker">

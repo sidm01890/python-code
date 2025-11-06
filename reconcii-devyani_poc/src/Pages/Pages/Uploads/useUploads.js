@@ -9,10 +9,17 @@ import LOG_ACTIONS from "../../../Constants/LogAction";
 import useMakeLogs from "../../../Hooks/useMakeLogs";
 
 const BLANK_FILTERS = {
+  client: "",
   type: "",
   tender: "",
   payment: "",
 };
+
+const CLIENT_OPTIONS = [
+  { value: "devyani", label: "Devyani", disabled: false },
+  { value: "bercos", label: "Bercos", disabled: false },
+  { value: "subway", label: "Subway", disabled: true }, // Temporarily disabled
+];
 
 const BLANK_PAYMENT_TYPE = [{ type: "-Select Payment Type-", dataSource: "" }];
 
@@ -29,6 +36,13 @@ const useUploads = () => {
   };
 
   const handleChange = (name, value) => {
+    if (name === "client") {
+      // Reset all filters when client changes
+      setValues({ ...BLANK_FILTERS, [name]: value });
+      setPaymentTypeList(BLANK_PAYMENT_TYPE);
+      return;
+    }
+
     if (name === "type") {
       setValues({ ...values, [name]: value, tender: "", payment: "" });
       managePaymentTypeList(value);
@@ -73,6 +87,14 @@ const useUploads = () => {
 
   const onSubmit = async () => {
     try {
+      if (values?.client === "") {
+        setToastMessage({
+          message: "Please select client.",
+          type: "error",
+        });
+        return;
+      }
+
       if (values?.payment === "") {
         setToastMessage({
           message: "Please select payment type.",
@@ -101,7 +123,7 @@ const useUploads = () => {
       };
 
       const response = await requestCallPost(
-        `${apiEndpoints.UPLOAD_FILE}?datasource=${values?.payment}`,
+        `${apiEndpoints.UPLOAD_FILE}?datasource=${values?.payment}&client=${values?.client}`,
         formData,
         customConfig
       );
@@ -121,6 +143,10 @@ const useUploads = () => {
       }
     } catch (error) {
       console.error(error);
+      setToastMessage({
+        message: error?.response?.data?.detail || "Upload failed. Please try again.",
+        type: "error",
+      });
     } finally {
       setLoading(false);
     }
@@ -135,6 +161,7 @@ const useUploads = () => {
     handleFileChange,
     onSubmit,
     files,
+    clientOptions: CLIENT_OPTIONS,
   };
 };
 

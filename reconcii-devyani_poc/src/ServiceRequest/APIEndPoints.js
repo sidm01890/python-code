@@ -54,9 +54,9 @@ const reconciiAdminBaseURL = "http://localhost:8034";
 const sso = "/api/auth";
 const reconcii = "/api/uploader";
 const activityURL = "/api/audit_log";
-const reconciliationNodeURL = "/api/node/reconciliation";
+const reconciliationNodeURL = "/api/reconciliation";
 // const RECONCILIATION_SERVICE = "/reconcii-devyani-service";
-const RECONCILIATION_SERVICE = "/api/node/reconciliation";
+const RECONCILIATION_SERVICE = "/api/reconciliation";
 
 // Bercos URLS
 
@@ -104,6 +104,7 @@ const apiEndpoints = {
   USER_LOGOUT: `${sso}${AUTH}/logout`,
   // RESET_PASSWORD: `${sso}${USER}/reset/password`,
   CHANGE_PASSWORD: `${sso}${USER}/change/password`,
+  // Backend does not expose a profile endpoint yet; profile is derived from login
   PROFILE: `${sso}${USER}/profile`,
   FORGOT_PASSWORD: `${sso}${USER}/forgot/password`,
 
@@ -160,6 +161,7 @@ const apiEndpoints = {
 
   POS_VS_3PO_SUMMARY_DOWNLOAD: `${reconciliationNodeURL}/generate-excel`,
   RECEIVABLE_VS_RECEIPT_SUMMARY_DOWNLOAD: `${reconciliationNodeURL}/generate-receivable-receipt-excel`,
+  SUMMARY_SHEET_DOWNLOAD: `${reconciliationNodeURL}/summary-sheet`,
   GET_CITY_LIST_DATA: `${reconciliationNodeURL}/cities`,
   GET_STORE_LIST_DATA: `${reconciliationNodeURL}/stores`,
   GET_ASYNC_GENERATE_REPORT_DATA: `${reconciliationNodeURL}/generation-status`,
@@ -224,6 +226,7 @@ const apiEndpoints = {
   // Upload URLs
   NEW_DATA_SOURCE_FIELDS: `${reconcii}/datasource`,
   UPLOAD_FILE: `${reconcii}/upload`,
+  ANALYZE_COLUMNS: `${reconcii}/analyze-columns`,
 
   ACTIVITY_CREATE: `${activityURL}/create`,
   ACTIVITY_SEARCH: `${activityURL}/list`,

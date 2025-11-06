@@ -39,10 +39,11 @@ const DashboardFilter = () => {
     fetchStoreList,
     getDashboard,
     downloadStoreReport,
+    downloadSummaryReport,
     fetchTenderWiseStoresMissedInMapping,
     fetchOldEffectiveDate,
   } = useDashboard();
-  let { cityList, storeList, loadingDashboard, dashboardFilterValues } =
+  let { cityList, storeList, loadingDashboard, dashboardFilterValues, currentDashboardRequest } =
     useSelector((state) => state.CommonService);
   const [filterValues, setFilterValues] = useState({});
 
@@ -71,11 +72,18 @@ const DashboardFilter = () => {
     //       : null,
     //   });
     // } else {
-    setFilterValues({
+    const initialFilters = {
       ...BLANK_FILTERS,
       salesLocation: DASHBOARD_ITEMS[0]?.key,
       salesType: STORE_SALES_ITEM[0]?.key,
-    });
+    };
+    setFilterValues(initialFilters);
+    
+    // Initialize Redux state with default filters to ensure calculations work
+    dispatch(setDashboardFilters({
+      salesLocation: DASHBOARD_ITEMS[0]?.key,
+      salesType: STORE_SALES_ITEM[0]?.key,
+    }));
     // }
   }, []);
 
@@ -96,14 +104,17 @@ const DashboardFilter = () => {
 
   const fetchCityListAndSet = async () => {
     let cityList = await fetchCityList();
-    setFilterValues({ ...filterValues, cities: cityList });
+    // Don't set all cities as selected - leave cities empty so user selects manually
+    // setFilterValues({ ...filterValues, cities: cityList }); // REMOVED - was causing all cities to be selected
   };
 
-  useEffect(() => {
-    if (filterValues?.cities?.length) {
-      onCityChange(filterValues?.cities);
-    }
-  }, [filterValues?.cities?.length]);
+  // Remove the useEffect that auto-triggers onCityChange
+  // This was causing all cities to be sent to API on initial load
+  // useEffect(() => {
+  //   if (filterValues?.cities?.length) {
+  //     onCityChange(filterValues?.cities);
+  //   }
+  // }, [filterValues?.cities?.length]);
 
   const handleFilterChange = (name, value) => {
     if (name === "salesLocation") {
@@ -141,21 +152,71 @@ const DashboardFilter = () => {
   };
 
   const onCityChange = async (cities) => {
+    console.log("[DashboardFilter] onCityChange called:", { cities, citiesLength: cities?.length });
+    
     if (cities?.length === 0) {
-      setFilterValues({ ...filterValues, stores: [] });
+      console.log("[DashboardFilter] Cities empty, clearing stores");
       dispatch(setStoreList([]));
+      setFilterValues((prev) => ({ ...prev, cities: cities, stores: [] }));
       return null;
     }
+    
+    // Extract city_id values from selected cities
+    // DropdownWithCheckbox may return either full objects or just city_id values
+    // We need to normalize to extract only city_id values for the API
+    const cityIds = cities.map((city) => {
+      // If city is an object, extract city_id
+      if (typeof city === 'object' && city !== null) {
+        return city.city_id || city.id || city;
+      }
+      // If city is already a string/number (city_id), use it directly
+      return city;
+    });
+    
+    console.log("[DashboardFilter] Extracted city IDs:", {
+      cityIds,
+      cityIdsLength: cityIds?.length,
+      cityIdsSample: cityIds?.slice(0, 5),
+    });
+    
+    // Update cities immediately (keep original format for display)
+    setFilterValues((prev) => ({ ...prev, cities: cities }));
+    
+    // Prepare API params with only city IDs (not full objects)
     let params = {
       startDate: moment(filterValues?.startDate).format("YYYY-MM-DD"),
       endDate: moment(filterValues?.endDate).format("YYYY-MM-DD"),
-      cities: cities,
+      cities: cityIds, // Send only city IDs to API
     };
-    let storeList = await fetchStoreList(params);
-    let storeListIds = storeList
-      ?.filter((str) => str.posDataSync === true)
-      ?.map((item) => item?.code);
-    setFilterValues({ ...filterValues, stores: storeListIds });
+    
+    console.log("[DashboardFilter] Fetching store list with params:", {
+      ...params,
+      citiesCount: params.cities?.length,
+      citiesSample: params.cities?.slice(0, 5),
+    });
+    
+    try {
+      let storeList = await fetchStoreList(params);
+      console.log("[DashboardFilter] Store list fetched:", {
+        storeListLength: storeList?.length,
+        firstStore: storeList?.[0],
+        storeListSample: storeList?.slice(0, 3),
+      });
+      
+      // Dispatch storeList to Redux for the dropdown component
+      // This ensures only stores from selected cities are shown
+      dispatch(setStoreList(storeList || []));
+      
+      // Clear selected stores - let user manually select stores
+      // Only stores with posDataSync === true will be enabled (handled by disableOptionOnKey)
+      setFilterValues((prev) => ({ ...prev, stores: [] }));
+      
+      console.log("[DashboardFilter] Store list updated in Redux, stores cleared from selection");
+    } catch (error) {
+      console.error("[DashboardFilter] Error fetching store list:", error);
+      dispatch(setStoreList([]));
+      setFilterValues((prev) => ({ ...prev, stores: [] }));
+    }
   };
 
   const onStoreChange = (stores) => {
@@ -163,13 +224,36 @@ const DashboardFilter = () => {
   };
 
   const searchDashboardData = () => {
+    console.log("[DashboardFilter] ===== SEARCH DASHBOARD DATA START =====");
+    console.log("[DashboardFilter] Filter values:", {
+      startDate: filterValues?.startDate,
+      endDate: filterValues?.endDate,
+      storesCount: filterValues?.stores?.length,
+      stores: filterValues?.stores
+    });
+    
     let params = {
       startDate: moment(filterValues?.startDate).format("YYYY-MM-DD 00:00:00"),
       endDate: moment(filterValues?.endDate).format("YYYY-MM-DD 23:59:59"),
       stores: filterValues.stores,
     };
-    getDashboard(params);
+    
+    console.log("[DashboardFilter] Formatted params:", JSON.stringify(params, null, 2));
+    console.log("[DashboardFilter] Params details:", {
+      startDate: params.startDate,
+      endDate: params.endDate,
+      storesCount: params.stores?.length,
+      firstFewStores: params.stores?.slice(0, 5),
+      lastFewStores: params.stores?.slice(-5)
+    });
+    
+    console.log("[DashboardFilter] Setting currentDashboardRequest in Redux...");
     dispatch(setCurrentDashboardRequest(params));
+    console.log("[DashboardFilter] ✅ currentDashboardRequest set in Redux");
+    
+    console.log("[DashboardFilter] Calling getDashboard...");
+    getDashboard(params);
+    console.log("[DashboardFilter] ===== SEARCH DASHBOARD DATA END =====");
   };
 
   const submitStoreReportRequest = async () => {
@@ -220,9 +304,7 @@ const DashboardFilter = () => {
           option_label={"city_name"}
           selectedLabel="Cities - "
           selectedOptions={filterValues.cities}
-          setSelectedOptions={(cities) =>
-            setFilterValues({ ...filterValues, cities: cities })
-          }
+          setSelectedOptions={onCityChange}
         />
         <DropdownWithCheckbox
           data={storeList}
@@ -245,6 +327,25 @@ const DashboardFilter = () => {
         </div>
       </div>
       <div>
+        <div style={{ display: "flex", justifyContent: "flex-start", marginBottom: "10px" }}>
+          <div style={{ width: "auto", display: "inline-block" }}>
+            <PrimaryButton
+              disabled={!currentDashboardRequest || !currentDashboardRequest.startDate || !currentDashboardRequest.stores || currentDashboardRequest.stores.length === 0}
+              label="Download Summary"
+              onClick={downloadSummaryReport}
+              style={{ 
+                backgroundColor: "#6c757d", 
+                color: "white",
+                opacity: (!currentDashboardRequest || !currentDashboardRequest.startDate || !currentDashboardRequest.stores || currentDashboardRequest.stores.length === 0) ? 0.5 : 1,
+                width: "auto !important",
+                minWidth: "auto",
+                padding: "6px 12px",
+                fontSize: "14px",
+                height: "auto"
+              }}
+            />
+          </div>
+        </div>
         <div className="selected-store-div">
           <div className="">
             <img src={InStore} alt="store" />
